@@ -263,6 +263,58 @@ module Ansi
     "\e]99;#{m};#{payload}\a"
   end
 
+  # ResetProgressBar is a sequence that resets the progress bar to its default
+  # state (hidden).
+  #
+  # OSC 9 ; 4 ; 0 BEL
+  #
+  # See: https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+  ResetProgressBar = "\e]9;4;0\a"
+
+  # SetProgressBar returns a sequence for setting the progress bar to a specific
+  # percentage (0-100) in the "default" state.
+  #
+  # OSC 9 ; 4 ; 1 Percentage BEL
+  #
+  # See: https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_progress_bar(percentage : Int32) : String
+    p = Math.max(0, Math.min(percentage, 100))
+    "\e]9;4;1;#{p}\a"
+  end
+
+  # SetErrorProgressBar returns a sequence for setting the progress bar to a
+  # specific percentage (0-100) in the "Error" state.
+  #
+  # OSC 9 ; 4 ; 2 Percentage BEL
+  #
+  # See: https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_error_progress_bar(percentage : Int32) : String
+    p = Math.max(0, Math.min(percentage, 100))
+    "\e]9;4;2;#{p}\a"
+  end
+
+  # SetIndeterminateProgressBar is a sequence that sets the progress bar to the
+  # indeterminate state.
+  #
+  # OSC 9 ; 4 ; 3 BEL
+  #
+  # See: https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+  SetIndeterminateProgressBar = "\e]9;4;3\a"
+
+  # SetWarningProgressBar is a sequence that sets the progress bar to the
+  # "Warning" state.
+  #
+  # OSC 9 ; 4 ; 4 Percentage BEL
+  #
+  # See: https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_warning_progress_bar(percentage : Int32) : String
+    p = Math.max(0, Math.min(percentage, 100))
+    "\e]9;4;4;#{p}\a"
+  end
+
   # Clipboard names.
   SystemClipboard  = 'c'
   PrimaryClipboard = 'p'
