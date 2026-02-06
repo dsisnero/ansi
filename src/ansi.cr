@@ -1,4 +1,5 @@
 require "./color"
+require "./style"
 require "./image"
 require "./iterm2"
 require "./kitty"
@@ -131,5 +132,157 @@ module Ansi
       path: joined_path
     )
     "\e]7;#{uri}\a"
+  end
+
+  # SetForegroundColor returns a sequence that sets the default terminal
+  # foreground color.
+  #
+  #	OSC 10 ; color ST
+  #	OSC 10 ; color BEL
+  #
+  # Where color is the encoded color number. Most terminals support hex,
+  # XParseColor rgb: and rgba: strings.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_foreground_color(s : String) : String
+    "\e]10;#{s}\a"
+  end
+
+  # RequestForegroundColor is a sequence that requests the current default
+  # terminal foreground color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  RequestForegroundColor = "\e]10;?\a"
+
+  # ResetForegroundColor is a sequence that resets the default terminal
+  # foreground color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  ResetForegroundColor = "\e]110\a"
+
+  # SetBackgroundColor returns a sequence that sets the default terminal
+  # background color.
+  #
+  #	OSC 11 ; color ST
+  #	OSC 11 ; color BEL
+  #
+  # Where color is the encoded color number. Most terminals support hex,
+  # XParseColor rgb: and rgba: strings.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_background_color(s : String) : String
+    "\e]11;#{s}\a"
+  end
+
+  # RequestBackgroundColor is a sequence that requests the current default
+  # terminal background color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  RequestBackgroundColor = "\e]11;?\a"
+
+  # ResetBackgroundColor is a sequence that resets the default terminal
+  # background color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  ResetBackgroundColor = "\e]111\a"
+
+  # SetCursorColor returns a sequence that sets the terminal cursor color.
+  #
+  #	OSC 12 ; color ST
+  #	OSC 12 ; color BEL
+  #
+  # Where color is the encoded color number. Most terminals support hex,
+  # XParseColor rgb: and rgba: strings.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_cursor_color(s : String) : String
+    "\e]12;#{s}\a"
+  end
+
+  # RequestCursorColor is a sequence that requests the current terminal cursor
+  # color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  RequestCursorColor = "\e]12;?\a"
+
+  # ResetCursorColor is a sequence that resets the terminal cursor color.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  ResetCursorColor = "\e]112\a"
+
+  # SetHyperlink returns a sequence for starting a hyperlink.
+  #
+  #	OSC 8 ; Params ; Uri ST
+  #	OSC 8 ; Params ; Uri BEL
+  #
+  # To reset the hyperlink, omit the URI.
+  #
+  # See: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+  def self.set_hyperlink(uri : String, *params) : String
+    p = params.join(":")
+    "\e]8;#{p};#{uri}\a"
+  end
+
+  # ResetHyperlink returns a sequence for resetting the hyperlink.
+  #
+  # This is equivalent to SetHyperlink("", params...).
+  #
+  # See: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+  def self.reset_hyperlink(*params) : String
+    set_hyperlink("", *params)
+  end
+
+  # Notify sends a desktop notification using iTerm's OSC 9.
+  #
+  #	OSC 9 ; Mc ST
+  #	OSC 9 ; Mc BEL
+  #
+  # Where Mc is the notification body.
+  #
+  # See: https://iterm2.com/documentation-escape-codes.html
+  def self.notify(s : String) : String
+    "\e]9;#{s}\a"
+  end
+
+  # DesktopNotification sends a desktop notification based on the extensible OSC
+  # 99 escape code.
+  #
+  #	OSC 99 ; <metadata> ; <payload> ST
+  #	OSC 99 ; <metadata> ; <payload> BEL
+  #
+  # Where <metadata> is a colon-separated list of key-value pairs, and
+  # <payload> is the notification body.
+  #
+  # See: https://sw.kovidgoyal.net/kitty/desktop-notifications/
+  def self.desktop_notification(payload : String, *metadata) : String
+    m = metadata.join(":")
+    "\e]99;#{m};#{payload}\a"
+  end
+
+  # SelectGraphicRendition (SGR) is a command that sets display attributes.
+  #
+  # Default is 0.
+  #
+  #	CSI Ps ; Ps ... m
+  #
+  # See: https://vt100.net/docs/vt510-rm/SGR.html
+  def self.select_graphic_rendition(attrs : Array(Attr)) : String
+    Style.new(attrs).to_s
+  end
+
+  def self.select_graphic_rendition(*attrs : Attr) : String
+    select_graphic_rendition(attrs.to_a)
+  end
+
+  # SGR is an alias for `select_graphic_rendition`.
+  def self.sgr(attrs : Array(Attr)) : String
+    select_graphic_rendition(attrs)
+  end
+
+  def self.sgr(*attrs : Attr) : String
+    sgr(attrs.to_a)
   end
 end
