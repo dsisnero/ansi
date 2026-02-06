@@ -4,6 +4,7 @@ require "./image"
 require "./iterm2"
 require "./kitty"
 require "./sixel"
+require "base64"
 require "uri"
 require "path"
 
@@ -261,6 +262,78 @@ module Ansi
     m = metadata.join(":")
     "\e]99;#{m};#{payload}\a"
   end
+
+  # Clipboard names.
+  SystemClipboard  = 'c'
+  PrimaryClipboard = 'p'
+
+  # SetClipboard returns a sequence for manipulating the clipboard.
+  #
+  #	OSC 52 ; Pc ; Pd ST
+  #	OSC 52 ; Pc ; Pd BEL
+  #
+  # Where Pc is the clipboard name and Pd is the base64 encoded data.
+  # Empty data or invalid base64 data will reset the clipboard.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  def self.set_clipboard(c : Char, d : String) : String
+    if d != ""
+      d = Base64.strict_encode(d.to_slice)
+    end
+    "\e]52;#{c};#{d}\a"
+  end
+
+  # SetSystemClipboard returns a sequence for setting the system clipboard.
+  #
+  # This is equivalent to SetClipboard(SystemClipboard, d).
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_system_clipboard(d : String) : String
+    set_clipboard(SystemClipboard, d)
+  end
+
+  # SetPrimaryClipboard returns a sequence for setting the primary clipboard.
+  #
+  # This is equivalent to SetClipboard(PrimaryClipboard, d).
+  # ameba:disable Naming/AccessorMethodName
+  def self.set_primary_clipboard(d : String) : String
+    set_clipboard(PrimaryClipboard, d)
+  end
+
+  # ResetClipboard returns a sequence for resetting the clipboard.
+  #
+  # This is equivalent to SetClipboard(c, "").
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  def self.reset_clipboard(c : Char) : String
+    set_clipboard(c, "")
+  end
+
+  # ResetSystemClipboard is a sequence for resetting the system clipboard.
+  #
+  # This is equivalent to ResetClipboard(SystemClipboard).
+  ResetSystemClipboard = "\e]52;c;\a"
+
+  # ResetPrimaryClipboard is a sequence for resetting the primary clipboard.
+  #
+  # This is equivalent to ResetClipboard(PrimaryClipboard).
+  ResetPrimaryClipboard = "\e]52;p;\a"
+
+  # RequestClipboard returns a sequence for requesting the clipboard.
+  #
+  # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  def self.request_clipboard(c : Char) : String
+    "\e]52;#{c};?\a"
+  end
+
+  # RequestSystemClipboard is a sequence for requesting the system clipboard.
+  #
+  # This is equivalent to RequestClipboard(SystemClipboard).
+  RequestSystemClipboard = "\e]52;c;?\a"
+
+  # RequestPrimaryClipboard is a sequence for requesting the primary clipboard.
+  #
+  # This is equivalent to RequestClipboard(PrimaryClipboard).
+  RequestPrimaryClipboard = "\e]52;p;?\a"
 
   # SelectGraphicRendition (SGR) is a command that sets display attributes.
   #
