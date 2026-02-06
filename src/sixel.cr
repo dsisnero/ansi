@@ -517,6 +517,55 @@ module Ansi
       end
     end
 
+    class Decoder
+      def scan_size(data : Bytes) : {Int32, Int32}
+        max_width = 0
+        band_count = 0
+        current_width = 0
+        new_band = true
+
+        i = 0
+        while i < data.size
+          b = data[i]
+          case b
+          when LineBreak.ord
+            # LF
+            current_width = 0
+            # The image may end with an LF, so we shouldn't increment the band
+            # count until we encounter a pixel
+            new_band = true
+          when CarriageReturn.ord
+            # CR
+            current_width = 0
+          when RepeatIntroducer.ord, '?'.ord..'~'.ord
+            count = 1
+            if b == RepeatIntroducer.ord
+              # Get the run length for the RLE operation
+              repeat, n = Sixel.decode_repeat(data[i..])
+              if n == 0
+                return {max_width, band_count * 6}
+              end
+
+              # 1 is added in the loop
+              i += n - 1
+              count = repeat.count
+            end
+
+            current_width += count
+            if new_band
+              new_band = false
+              band_count += 1
+            end
+
+            max_width = Math.max(max_width, current_width)
+          end
+          i += 1
+        end
+
+        {max_width, band_count * 6}
+      end
+    end
+
     class Encoder
       def encode(io : IO, image : Ansi::Image) : Nil
         return if image.width == 0 || image.height == 0

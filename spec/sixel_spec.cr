@@ -389,32 +389,54 @@ describe Ansi::Sixel do
   end
 
   describe "ScanSize (from Go TestScanSize)" do
-    pending "two lines" do
-      # data: "~~~~~~-~~~~~~-", width: 6, height: 12
+    it "two lines" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("~~~~~~-~~~~~~-".to_slice)
+      width.should eq 6
+      height.should eq 12
     end
 
-    pending "two lines no newline at end" do
-      # data: "~~~~~~-~~~~~~", width: 6, height: 12
+    it "two lines no newline at end" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("~~~~~~-~~~~~~".to_slice)
+      width.should eq 6
+      height.should eq 12
     end
 
-    pending "no pixels" do
-      # data: "", width: 0, height: 0
+    it "no pixels" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("".to_slice)
+      width.should eq 0
+      height.should eq 0
     end
 
-    pending "smaller carriage returns" do
-      # data: "~$~~$~~~$~~~~$~~~~~$~~~~~~", width: 6, height: 6
+    it "smaller carriage returns" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("~$~~$~~~$~~~~$~~~~~$~~~~~~".to_slice)
+      width.should eq 6
+      height.should eq 6
     end
 
-    pending "transparent" do
-      # data: "??????", width: 6, height: 6
+    it "transparent" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("??????".to_slice)
+      width.should eq 6
+      height.should eq 6
     end
 
-    pending "RLE" do
-      # data: "??!20?", width: 22, height: 6
+    it "RLE" do
+      decoder = Ansi::Sixel::Decoder.new
+      width, height = decoder.scan_size("??!20?".to_slice)
+      width.should eq 22
+      height.should eq 6
     end
 
-    pending "Colors" do
-      # data: "#0;2;0;0;0~~~~~$#1;2;100;100;100;~~~~~~-#0~~~~~~-#1~~~~~~", width: 6, height: 18
+    it "Colors" do
+      decoder = Ansi::Sixel::Decoder.new
+      data = "#0;2;0;0;0~~~~~$#1;2;100;100;100;~~~~~~-#0~~~~~~-#1~~~~~~".to_slice
+      width, height = decoder.scan_size(data)
+      width.should eq 6
+      height.should eq 18
     end
   end
 
