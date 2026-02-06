@@ -221,16 +221,38 @@ module Ansi
       hue = h.to_f64
       saturation = s.to_f64 / 100.0
       lightness = l.to_f64 / 100.0
-      colorful_color = Colorful::Color.hsl(hue, saturation, lightness)
+      colorful_color = Colorful::Color.hsl(hue, saturation, lightness).clamped
+      # Handle floating point precision errors by rounding with tolerance
+      # Values very close to 0 should be 0, values very close to 1 should be 1
+      r_f = colorful_color.r
+      g_f = colorful_color.g
+      b_f = colorful_color.b
+
+      # Tolerance for floating point errors
+      tolerance = 0.0001
+
+      # Adjust values very close to 0 or 1
+      r_f = 0.0 if r_f.abs < tolerance
+      g_f = 0.0 if g_f.abs < tolerance
+      b_f = 0.0 if b_f.abs < tolerance
+      r_f = 1.0 if (r_f - 1.0).abs < tolerance
+      g_f = 1.0 if (g_f - 1.0).abs < tolerance
+      b_f = 1.0 if (b_f - 1.0).abs < tolerance
+
+      # Clamp to valid range
+      r_f = r_f.clamp(0.0, 1.0)
+      g_f = g_f.clamp(0.0, 1.0)
+      b_f = b_f.clamp(0.0, 1.0)
+
       # Convert from Float64 0-1 to UInt8 0-255
-      r = (colorful_color.r * 255.0).round.to_i.clamp(0, 255)
-      g = (colorful_color.g * 255.0).round.to_i.clamp(0, 255)
-      b = (colorful_color.b * 255.0).round.to_i.clamp(0, 255)
+      r = (r_f * 255.0 + 0.5).to_i.clamp(0, 255)
+      g = (g_f * 255.0 + 0.5).to_i.clamp(0, 255)
+      b = (b_f * 255.0 + 0.5).to_i.clamp(0, 255)
       Ansi::Color.new(r.to_u8, g.to_u8, b.to_u8, 0xFF_u8)
     end
 
     def self.convert_channel(c16 : UInt32) : UInt32
-      (c16 + 328_u32) * 100_u32 / 0xffff_u32
+      (((c16 + 328_u32) * 100_u32) / 0xffff_u32).to_u32
     end
 
     struct Color
@@ -276,11 +298,11 @@ module Ansi
       end
     end
 
-    private def self.to_16bit(channel : UInt8) : UInt32
+    def self.to_16bit(channel : UInt8) : UInt32
       (channel.to_u32 * 0x101_u32)
     end
 
-    private def self.sixel_convert_color(color : Ansi::Color) : SixelColor
+    def self.sixel_convert_color(color : Ansi::Color) : SixelColor
       SixelColor.new(
         convert_channel(to_16bit(color.r)),
         convert_channel(to_16bit(color.g)),
@@ -300,7 +322,7 @@ module Ansi
       end
     end
 
-    private def self.new_palette(image : Ansi::Image, max_colors : Int32) : Palette
+    def self.new_palette(image : Ansi::Image, max_colors : Int32) : Palette
       pixel_counts = Hash(SixelColor, UInt64).new(0_u64)
       image.each_pixel do |_x, _y, color|
         converted = sixel_convert_color(color)
@@ -315,11 +337,11 @@ module Ansi
         best_index = 0
         best_score = UInt32::MAX
         palette_colors.each_with_index do |palette_color, idx|
-          dr = (color.red - palette_color.red)
-          dg = (color.green - palette_color.green)
-          db = (color.blue - palette_color.blue)
-          da = (color.alpha - palette_color.alpha)
-          score = dr * dr + dg * dg + db * db + da * da
+          dr = (color.red.to_i32 - palette_color.red.to_i32)
+          dg = (color.green.to_i32 - palette_color.green.to_i32)
+          db = (color.blue.to_i32 - palette_color.blue.to_i32)
+          da = (color.alpha.to_i32 - palette_color.alpha.to_i32)
+          score = (dr * dr + dg * dg + db * db + da * da).to_u32
           if score < best_score
             best_score = score
             best_index = idx
@@ -406,7 +428,8 @@ module Ansi
       cubes << create_cube(unique_colors, pixel_counts, 0, unique_colors.size)
 
       while cubes.size < max_colors
-        cubes.sort_by! { |cube| -cube.score }
+        cubes.sort_by!(&.score)
+        cubes.reverse!
         cube = cubes.shift
         break unless cube
 
