@@ -140,6 +140,33 @@ module Ansi
     end
   end
 
+  # Convert16 converts a color to a 16-color ANSI color. It will first
+  # try to find a match in the 256 xterm(1) color palette, and then map that to
+  # the 16-color ANSI palette.
+  def self.convert_16(color : BasicColor) : BasicColor
+    color
+  end
+
+  def self.convert_16(color : IndexedColor) : BasicColor
+    BasicColor.new(ANSI256_TO_16[color.value])
+  end
+
+  def self.convert_16(color : TrueColor) : BasicColor
+    # Convert TrueColor to Colorful::Color via Color
+    r, g, b = hex_to_rgb(color.value)
+    colorful = Colorful::Color.new(r: r.to_f64 / 255.0, g: g.to_f64 / 255.0, b: b.to_f64 / 255.0)
+    convert_16(colorful)
+  end
+
+  def self.convert_16(color : Color) : BasicColor
+    convert_16(to_colorful(color))
+  end
+
+  def self.convert_16(color : Colorful::Color) : BasicColor
+    c256 = convert_256(color)
+    BasicColor.new(ANSI256_TO_16[c256.value])
+  end
+
   private def self.to_6_cube(v : Float64) : Int32
     vi = v.to_i
     if vi < 48
@@ -149,6 +176,16 @@ module Ansi
     else
       ((vi - 35) / 40).to_i
     end
+  end
+
+  # dist_sq calculates the squared distance between two colors.
+  private def self.dist_sq(r1 : Int32, g1 : Int32, b1 : Int32, r2 : Int32, g2 : Int32, b2 : Int32) : Int32
+    ((r1 - r2) * (r1 - r2) + (g1 - g2) * (g1 - g2) + (b1 - b2) * (b1 - b2))
+  end
+
+  # Convert Color to Colorful::Color
+  private def self.to_colorful(color : Color) : Colorful::Color
+    Colorful::Color.new(r: color.r.to_f64 / 255.0, g: color.g.to_f64 / 255.0, b: color.b.to_f64 / 255.0)
   end
 
   # 6-level cube values
@@ -192,4 +229,24 @@ module Ansi
 
     table
   end
+
+  # Mapping from 256-color index to 16-color ANSI palette
+  private ANSI256_TO_16 = StaticArray[
+    0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8, 7_u8, 8_u8, 9_u8, 10_u8, 11_u8, 12_u8, 13_u8, 14_u8, 15_u8,
+    0_u8, 4_u8, 4_u8, 4_u8, 12_u8, 12_u8, 2_u8, 6_u8, 4_u8, 4_u8, 12_u8, 12_u8, 2_u8, 2_u8, 6_u8, 4_u8,
+    12_u8, 12_u8, 2_u8, 2_u8, 2_u8, 6_u8, 12_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8, 14_u8, 12_u8, 10_u8, 10_u8,
+    10_u8, 10_u8, 10_u8, 14_u8, 1_u8, 5_u8, 4_u8, 4_u8, 12_u8, 12_u8, 3_u8, 8_u8, 4_u8, 4_u8, 12_u8, 12_u8,
+    2_u8, 2_u8, 6_u8, 4_u8, 12_u8, 12_u8, 2_u8, 2_u8, 2_u8, 6_u8, 12_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8,
+    14_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8, 10_u8, 14_u8, 1_u8, 1_u8, 5_u8, 4_u8, 12_u8, 12_u8, 1_u8, 1_u8,
+    5_u8, 4_u8, 12_u8, 12_u8, 3_u8, 3_u8, 8_u8, 4_u8, 12_u8, 12_u8, 2_u8, 2_u8, 2_u8, 6_u8, 12_u8, 12_u8,
+    10_u8, 10_u8, 10_u8, 10_u8, 14_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8, 10_u8, 14_u8, 1_u8, 1_u8, 1_u8, 5_u8,
+    12_u8, 12_u8, 1_u8, 1_u8, 1_u8, 5_u8, 12_u8, 12_u8, 1_u8, 1_u8, 1_u8, 5_u8, 12_u8, 12_u8, 3_u8, 3_u8,
+    3_u8, 7_u8, 12_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8, 14_u8, 12_u8, 10_u8, 10_u8, 10_u8, 10_u8, 10_u8, 14_u8,
+    9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 12_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 12_u8, 9_u8, 9_u8, 9_u8, 9_u8,
+    13_u8, 12_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 12_u8, 11_u8, 11_u8, 11_u8, 11_u8, 7_u8, 12_u8, 10_u8, 10_u8,
+    10_u8, 10_u8, 10_u8, 14_u8, 9_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 9_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8,
+    9_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 9_u8, 9_u8, 9_u8, 9_u8, 9_u8, 13_u8, 9_u8, 9_u8, 9_u8, 9_u8,
+    9_u8, 13_u8, 11_u8, 11_u8, 11_u8, 11_u8, 11_u8, 15_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 8_u8, 8_u8,
+    8_u8, 8_u8, 8_u8, 8_u8, 7_u8, 7_u8, 7_u8, 7_u8, 7_u8, 7_u8, 15_u8, 15_u8, 15_u8, 15_u8, 15_u8, 15_u8,
+  ]
 end
