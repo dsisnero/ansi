@@ -1,3 +1,5 @@
+require "colorful"
+
 module Ansi
   struct Color
     getter r : UInt8
@@ -11,5 +13,183 @@ module Ansi
     def self.black : Color
       Color.new(0_u8, 0_u8, 0_u8, 0xff_u8)
     end
+
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      {r.to_u32 * 0x101_u32, g.to_u32 * 0x101_u32, b.to_u32 * 0x101_u32, a.to_u32 * 0x101_u32}
+    end
+  end
+
+  # BasicColor is an ANSI 3-bit or 4-bit color with a value from 0 to 15.
+  struct BasicColor
+    getter value : UInt8
+
+    def initialize(@value : UInt8)
+    end
+
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      Ansi.ansi_to_rgb(value).rgba
+    end
+
+    # Constants
+    Black         = BasicColor.new(0_u8)
+    Red           = BasicColor.new(1_u8)
+    Green         = BasicColor.new(2_u8)
+    Yellow        = BasicColor.new(3_u8)
+    Blue          = BasicColor.new(4_u8)
+    Magenta       = BasicColor.new(5_u8)
+    Cyan          = BasicColor.new(6_u8)
+    White         = BasicColor.new(7_u8)
+    BrightBlack   = BasicColor.new(8_u8)
+    BrightRed     = BasicColor.new(9_u8)
+    BrightGreen   = BasicColor.new(10_u8)
+    BrightYellow  = BasicColor.new(11_u8)
+    BrightBlue    = BasicColor.new(12_u8)
+    BrightMagenta = BasicColor.new(13_u8)
+    BrightCyan    = BasicColor.new(14_u8)
+    BrightWhite   = BasicColor.new(15_u8)
+  end
+
+  # IndexedColor is an ANSI 256 (8-bit) color with a value from 0 to 255.
+  struct IndexedColor
+    getter value : UInt8
+
+    def initialize(@value : UInt8)
+    end
+
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      Ansi.ansi_to_rgb(value).rgba
+    end
+  end
+
+  # TrueColor is a 24-bit color that can be used in the terminal.
+  # This can be used to represent RGB colors.
+  struct TrueColor
+    getter value : UInt32
+
+    def initialize(@value : UInt32)
+    end
+
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      r, g, b = Ansi.hex_to_rgb(value)
+      {r.to_u32 * 0x101_u32, g.to_u32 * 0x101_u32, b.to_u32 * 0x101_u32, 0xFFFF_u32}
+    end
+  end
+
+  # ansi_to_rgb converts an ANSI color to a 24-bit RGB color.
+  def self.ansi_to_rgb(ansi : UInt8) : Color
+    ANSI_HEX[ansi]? || Color.black
+  end
+
+  # hex_to_rgb converts a number in hexadecimal format to red, green, and blue values.
+  def self.hex_to_rgb(hex : UInt32) : {UInt8, UInt8, UInt8}
+    r = ((hex >> 16) & 0xff).to_u8
+    g = ((hex >> 8) & 0xff).to_u8
+    b = (hex & 0xff).to_u8
+    {r, g, b}
+  end
+
+  # color_to_hex_string converts a color to a hex string.
+  def self.color_to_hex_string(color : Color) : String
+    sprintf("#%02x%02x%02x", color.r, color.g, color.b)
+  end
+
+  # Convert256 converts a color, usually a 24-bit color, to xterm(1) 256 color palette.
+  def self.convert_256(color : Colorful::Color) : IndexedColor
+    # Convert from Colorful::Color to IndexedColor
+    # Implementation based on Go's Convert256
+    r = color.r * 255
+    g = color.g * 255
+    b = color.b * 255
+
+    q2c = [0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff]
+
+    # Map RGB to 6x6x6 cube
+    qr = to_6_cube(r)
+    cr = q2c[qr]
+    qg = to_6_cube(g)
+    cg = q2c[qg]
+    qb = to_6_cube(b)
+    cb = q2c[qb]
+
+    # If we have hit the color exactly, return early.
+    ci = (36 * qr) + (6 * qg) + qb
+    if cr == r.to_i && cg == g.to_i && cb == b.to_i
+      return IndexedColor.new((16 + ci).to_u8)
+    end
+
+    # Work out the closest grey (average of RGB).
+    grey_avg = (r + g + b).to_i / 3
+    grey_idx = if grey_avg > 238
+                 23
+               else
+                 val = grey_avg - 3
+                 val < 0 ? 0 : val // 10
+               end
+    grey = 8 + (10 * grey_idx)
+
+    # Return the one which is nearer to the original input rgb value
+    c2 = Colorful::Color.new(r: cr.to_f64 / 255.0, g: cg.to_f64 / 255.0, b: cb.to_f64 / 255.0)
+    g2 = Colorful::Color.new(r: grey.to_f64 / 255.0, g: grey.to_f64 / 255.0, b: grey.to_f64 / 255.0)
+    color_dist = color.distance_hsluv(c2)
+    gray_dist = color.distance_hsluv(g2)
+
+    if color_dist <= gray_dist
+      IndexedColor.new((16 + ci).to_u8)
+    else
+      IndexedColor.new((232 + grey_idx).to_u8)
+    end
+  end
+
+  private def self.to_6_cube(v : Float64) : Int32
+    vi = v.to_i
+    if vi < 48
+      0
+    elsif vi < 115
+      1
+    else
+      ((vi - 35) / 40).to_i
+    end
+  end
+
+  # 6-level cube values
+  private SIX_CUBE = [0x00_u8, 0x5f_u8, 0x87_u8, 0xaf_u8, 0xd7_u8, 0xff_u8]
+
+  # RGB values of ANSI colors (0-255)
+  private ANSI_HEX = begin
+    table = Array.new(256) { Color.black }
+    # Colors 0-15: fixed ANSI colors
+    table[0] = Color.new(0x00_u8, 0x00_u8, 0x00_u8, 0xFF_u8)  # black
+    table[1] = Color.new(0x80_u8, 0x00_u8, 0x00_u8, 0xFF_u8)  # red
+    table[2] = Color.new(0x00_u8, 0x80_u8, 0x00_u8, 0xFF_u8)  # green
+    table[3] = Color.new(0x80_u8, 0x80_u8, 0x00_u8, 0xFF_u8)  # yellow
+    table[4] = Color.new(0x00_u8, 0x00_u8, 0x80_u8, 0xFF_u8)  # blue
+    table[5] = Color.new(0x80_u8, 0x00_u8, 0x80_u8, 0xFF_u8)  # magenta
+    table[6] = Color.new(0x00_u8, 0x80_u8, 0x80_u8, 0xFF_u8)  # cyan
+    table[7] = Color.new(0xc0_u8, 0xc0_u8, 0xc0_u8, 0xFF_u8)  # silver
+    table[8] = Color.new(0x80_u8, 0x80_u8, 0x80_u8, 0xFF_u8)  # gray
+    table[9] = Color.new(0xff_u8, 0x00_u8, 0x00_u8, 0xFF_u8)  # bright red
+    table[10] = Color.new(0x00_u8, 0xff_u8, 0x00_u8, 0xFF_u8) # bright green
+    table[11] = Color.new(0xff_u8, 0xff_u8, 0x00_u8, 0xFF_u8) # bright yellow
+    table[12] = Color.new(0x00_u8, 0x00_u8, 0xff_u8, 0xFF_u8) # bright blue
+    table[13] = Color.new(0xff_u8, 0x00_u8, 0xff_u8, 0xFF_u8) # bright magenta
+    table[14] = Color.new(0x00_u8, 0xff_u8, 0xff_u8, 0xFF_u8) # bright cyan
+    table[15] = Color.new(0xff_u8, 0xff_u8, 0xff_u8, 0xFF_u8) # white
+
+    # Colors 16-231: 6x6x6 color cube
+    (16...232).each do |i|
+      idx = i - 16
+      b = idx % 6
+      g = (idx // 6) % 6
+      r = idx // 36
+      table[i] = Color.new(SIX_CUBE[r], SIX_CUBE[g], SIX_CUBE[b], 0xFF_u8)
+    end
+
+    # Colors 232-255: grayscale
+    (232...256).each do |i|
+      gray = 8_u8 + ((i - 232) * 10).to_u8
+      table[i] = Color.new(gray, gray, gray, 0xFF_u8)
+    end
+
+    table
   end
 end
