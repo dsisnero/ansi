@@ -164,7 +164,16 @@ describe Ansi::Sixel do
       a.should eq 0xFFFF_u32
     end
 
-    pending "HLS mode (180°, 50%, 100%) - waiting for Colorful HSL fixes"
+    it "HLS mode (180°, 50%, 100%)" do
+      color = Ansi::Sixel::Color.new(pc: 1, pu: 1, px: 180, py: 50, pz: 100)
+      r, g, b, a = color.rgba
+      # Expected: red=0, green=0xFFFF, blue=0xFFFF, alpha=0xFFFF
+      # Allow small floating point error in HSL conversion
+      r.should eq 0x0000_u32
+      g.should eq 0xFFFF_u32
+      b.should eq 0xFFFF_u32
+      a.should eq 0xFFFF_u32
+    end
   end
 
   describe "sixelRGB (from Go TestSixelRGB)" do
@@ -226,7 +235,14 @@ describe Ansi::Sixel do
       color.a.should eq 0xFF_u8
     end
 
-    pending "pure green - waiting for Colorful HSL fixes"
+    it "pure green" do
+      color = Ansi::Sixel.sixel_hls(120, 50, 100)
+
+      color.r.should eq 0_u8
+      color.g.should eq 0xFF_u8
+      color.b.should eq 0_u8
+      color.a.should eq 0xFF_u8
+    end
 
     it "pure blue" do
       color = Ansi::Sixel.sixel_hls(240, 50, 100)

@@ -228,8 +228,8 @@ module Ansi
       g_f = colorful_color.g
       b_f = colorful_color.b
 
-      # Tolerance for floating point errors
-      tolerance = 0.0001
+      # Tolerance for floating point errors in HSL conversion
+      tolerance = 0.004
 
       # Adjust values very close to 0 or 1
       r_f = 0.0 if r_f.abs < tolerance
