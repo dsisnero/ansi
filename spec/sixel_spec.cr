@@ -368,26 +368,114 @@ describe Ansi::Sixel do
   end
 
   describe "Palette creation (from Go TestPaletteCreationRedGreen)" do
-    pending "way too many colors - waiting for Colorful library fixes" do
-      # maxColors: 16, expected palette of 4 colors
+    it "way too many colors" do
+      # Create 2x2 image with red and green at full/half intensity
+      image = Ansi::RGBAImage.new(2, 2)
+      image.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8)) # red
+      image.set(0, 1, Ansi::Color.new(128_u8, 0_u8, 0_u8, 255_u8)) # half red
+      image.set(1, 0, Ansi::Color.new(0_u8, 255_u8, 0_u8, 255_u8)) # green
+      image.set(1, 1, Ansi::Color.new(0_u8, 128_u8, 0_u8, 255_u8)) # half green
+
+      palette = Ansi::Sixel.new_palette(image, 16)
+      palette.palette_colors.size.should eq 4
+
+      expected = [
+        Ansi::Sixel::SixelColor.new(100_u32, 0_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(50_u32, 0_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 100_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 50_u32, 0_u32, 100_u32),
+      ]
+
+      expected.each do |exp|
+        palette.palette_colors.should contain(exp)
+      end
     end
 
-    pending "just the right number of colors - waiting for Colorful library fixes" do
-      # maxColors: 4, expected palette of 4 colors
+    it "just the right number of colors" do
+      image = Ansi::RGBAImage.new(2, 2)
+      image.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8))
+      image.set(0, 1, Ansi::Color.new(128_u8, 0_u8, 0_u8, 255_u8))
+      image.set(1, 0, Ansi::Color.new(0_u8, 255_u8, 0_u8, 255_u8))
+      image.set(1, 1, Ansi::Color.new(0_u8, 128_u8, 0_u8, 255_u8))
+
+      palette = Ansi::Sixel.new_palette(image, 4)
+      palette.palette_colors.size.should eq 4
+
+      expected = [
+        Ansi::Sixel::SixelColor.new(100_u32, 0_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(50_u32, 0_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 100_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 50_u32, 0_u32, 100_u32),
+      ]
+
+      expected.each do |exp|
+        palette.palette_colors.should contain(exp)
+      end
     end
 
-    pending "color reduction - waiting for Colorful library fixes" do
-      # maxColors: 2, expected palette of 2 colors (averaged)
+    it "color reduction" do
+      image = Ansi::RGBAImage.new(2, 2)
+      image.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8))
+      image.set(0, 1, Ansi::Color.new(128_u8, 0_u8, 0_u8, 255_u8))
+      image.set(1, 0, Ansi::Color.new(0_u8, 255_u8, 0_u8, 255_u8))
+      image.set(1, 1, Ansi::Color.new(0_u8, 128_u8, 0_u8, 255_u8))
+
+      palette = Ansi::Sixel.new_palette(image, 2)
+      palette.palette_colors.size.should eq 2
+
+      expected = [
+        Ansi::Sixel::SixelColor.new(75_u32, 0_u32, 0_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 75_u32, 0_u32, 100_u32),
+      ]
+
+      expected.each do |exp|
+        palette.palette_colors.should contain(exp)
+      end
     end
   end
 
   describe "Palette with semi-transparency (from Go TestPaletteWithSemiTransparency)" do
-    pending "just the right number of colors - waiting for Colorful library fixes" do
-      # maxColors: 4, expected palette of 4 colors
+    it "just the right number of colors" do
+      # Create 2x2 image with blue at different intensities and alpha values
+      image = Ansi::RGBAImage.new(2, 2)
+      image.set(0, 0, Ansi::Color.new(0_u8, 0_u8, 255_u8, 255_u8)) # blue, opaque
+      image.set(0, 1, Ansi::Color.new(0_u8, 0_u8, 128_u8, 255_u8)) # half blue, opaque
+      image.set(1, 0, Ansi::Color.new(0_u8, 0_u8, 255_u8, 128_u8)) # blue, semi-transparent
+      image.set(1, 1, Ansi::Color.new(0_u8, 0_u8, 255_u8, 0_u8))   # blue, transparent
+
+      palette = Ansi::Sixel.new_palette(image, 4)
+      palette.palette_colors.size.should eq 4
+
+      expected = [
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 100_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 50_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 100_u32, 50_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 100_u32, 0_u32),
+      ]
+
+      expected.each do |exp|
+        palette.palette_colors.should contain(exp)
+      end
     end
 
-    pending "color reduction - waiting for Colorful library fixes" do
-      # maxColors: 2, expected palette of 2 colors
+    it "color reduction" do
+      image = Ansi::RGBAImage.new(2, 2)
+      image.set(0, 0, Ansi::Color.new(0_u8, 0_u8, 255_u8, 255_u8))
+      image.set(0, 1, Ansi::Color.new(0_u8, 0_u8, 128_u8, 255_u8))
+      image.set(1, 0, Ansi::Color.new(0_u8, 0_u8, 255_u8, 128_u8))
+      image.set(1, 1, Ansi::Color.new(0_u8, 0_u8, 255_u8, 0_u8))
+
+      palette = Ansi::Sixel.new_palette(image, 2)
+      palette.palette_colors.size.should eq 2
+
+      expected = [
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 75_u32, 100_u32),
+        Ansi::Sixel::SixelColor.new(0_u32, 0_u32, 100_u32, 25_u32),
+      ]
+
+      expected.each do |exp|
+        palette.palette_colors.should contain(exp)
+      end
     end
   end
 

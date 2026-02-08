@@ -8,7 +8,10 @@ module Ansi
     ColorIntroducer  = '#'
     RasterAttribute  = '"'
 
-    MaxColors = 256
+    MaxColors =     256
+    ST        = 0x9C_u8
+    ESC       = 0x1B_u8
+    BEL       = 0x07_u8
 
     class ErrInvalidRaster < Exception
     end
@@ -254,6 +257,273 @@ module Ansi
 
     def self.convert_channel(c16 : UInt32) : UInt32
       (((c16 + 328_u32) * 100_u32) / 0xffff_u32).to_u32
+    end
+
+    # Default palette for Sixel images. This is a combination of the Sixel
+    # default colors and the xterm colors.
+    private DEFAULT_PALETTE = [
+      Ansi::Color.new(0_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(51_u8, 51_u8, 204_u8, 255_u8),
+      Ansi::Color.new(204_u8, 36_u8, 36_u8, 255_u8),
+      Ansi::Color.new(51_u8, 204_u8, 51_u8, 255_u8),
+      Ansi::Color.new(204_u8, 51_u8, 204_u8, 255_u8),
+      Ansi::Color.new(51_u8, 204_u8, 204_u8, 255_u8),
+      Ansi::Color.new(204_u8, 204_u8, 51_u8, 255_u8),
+      Ansi::Color.new(120_u8, 120_u8, 120_u8, 255_u8),
+      Ansi::Color.new(69_u8, 69_u8, 69_u8, 255_u8),
+      Ansi::Color.new(87_u8, 87_u8, 153_u8, 255_u8),
+      Ansi::Color.new(153_u8, 69_u8, 69_u8, 255_u8),
+      Ansi::Color.new(87_u8, 153_u8, 87_u8, 255_u8),
+      Ansi::Color.new(153_u8, 87_u8, 153_u8, 255_u8),
+      Ansi::Color.new(87_u8, 153_u8, 153_u8, 255_u8),
+      Ansi::Color.new(153_u8, 153_u8, 87_u8, 255_u8),
+      Ansi::Color.new(204_u8, 204_u8, 204_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(0_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 125_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 175_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(0_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 175_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(95_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 175_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(135_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(175_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 175_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(215_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 0_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 95_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 135_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 175_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 215_u8, 255_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 0_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 95_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 135_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 175_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 215_u8, 255_u8),
+      Ansi::Color.new(255_u8, 255_u8, 255_u8, 255_u8),
+      Ansi::Color.new(8_u8, 8_u8, 8_u8, 255_u8),
+      Ansi::Color.new(18_u8, 18_u8, 18_u8, 255_u8),
+      Ansi::Color.new(28_u8, 28_u8, 28_u8, 255_u8),
+      Ansi::Color.new(38_u8, 38_u8, 38_u8, 255_u8),
+      Ansi::Color.new(48_u8, 48_u8, 48_u8, 255_u8),
+      Ansi::Color.new(58_u8, 58_u8, 58_u8, 255_u8),
+      Ansi::Color.new(68_u8, 68_u8, 68_u8, 255_u8),
+      Ansi::Color.new(78_u8, 78_u8, 78_u8, 255_u8),
+      Ansi::Color.new(88_u8, 88_u8, 88_u8, 255_u8),
+      Ansi::Color.new(98_u8, 98_u8, 98_u8, 255_u8),
+      Ansi::Color.new(108_u8, 108_u8, 108_u8, 255_u8),
+      Ansi::Color.new(118_u8, 118_u8, 118_u8, 255_u8),
+      Ansi::Color.new(128_u8, 128_u8, 128_u8, 255_u8),
+      Ansi::Color.new(138_u8, 138_u8, 138_u8, 255_u8),
+      Ansi::Color.new(148_u8, 148_u8, 148_u8, 255_u8),
+      Ansi::Color.new(158_u8, 158_u8, 158_u8, 255_u8),
+      Ansi::Color.new(168_u8, 168_u8, 168_u8, 255_u8),
+      Ansi::Color.new(178_u8, 178_u8, 178_u8, 255_u8),
+      Ansi::Color.new(188_u8, 188_u8, 188_u8, 255_u8),
+      Ansi::Color.new(198_u8, 198_u8, 198_u8, 255_u8),
+      Ansi::Color.new(208_u8, 208_u8, 208_u8, 255_u8),
+      Ansi::Color.new(218_u8, 218_u8, 218_u8, 255_u8),
+      Ansi::Color.new(228_u8, 228_u8, 228_u8, 255_u8),
+      Ansi::Color.new(238_u8, 238_u8, 238_u8, 255_u8),
+    ]
+
+    # DefaultPalette returns the default palette used when decoding a Sixel image.
+    # It contains the 256 colors defined by the xterm 256-color palette.
+    def self.default_palette : Array(Ansi::Color)
+      DEFAULT_PALETTE.dup
     end
 
     struct Color
@@ -587,6 +857,132 @@ module Ansi
         end
 
         {max_width, band_count * 6}
+      end
+
+      def decode(io : IO) : Ansi::RGBAImage
+        # Read all data from IO
+        data = io.gets_to_end.to_slice
+        idx = 0
+
+        bounds = nil
+        raster = nil
+
+        # Check for raster attribute
+        if idx < data.size && data[idx] == RasterAttribute.ord
+          n = 16
+          loop do
+            slice = data[idx, Math.min(n, data.size - idx)]
+            raster, read = Sixel.decode_raster(slice)
+            if read == 0
+              raise ErrInvalidRaster.new("invalid raster")
+            end
+            if read >= n && idx + n < data.size
+              n *= 2
+              next
+            end
+            idx += read
+            break
+          end
+          bounds = {0, 0, raster.ph, raster.pv}
+        end
+
+        if bounds.nil? || bounds[2] == 0 || bounds[3] == 0
+          # Need to scan size from remaining data
+          width, height = scan_size(data[idx..])
+          bounds = {0, 0, width, height}
+        end
+
+        img = Ansi::RGBAImage.new(bounds[2], bounds[3])
+        palette = Sixel.default_palette
+        current_x = 0
+        current_band_y = 0
+        current_palette_index = 0
+
+        while idx < data.size
+          b = data[idx]
+          idx += 1
+          count = 1
+
+          case b
+          when LineBreak.ord
+            current_band_y += 1
+            current_x = 0
+          when CarriageReturn.ord
+            current_x = 0
+          when ColorIntroducer.ord
+            color_start = idx - 1
+            while idx < data.size
+              b2 = data[idx]
+              if (b2 < '0'.ord || b2 > '9'.ord) && b2 != ';'.ord
+                break
+              end
+              idx += 1
+            end
+            color_slice = data[color_start...idx]
+            color, n = Sixel.decode_color(color_slice)
+            if n == 0
+              raise ErrInvalidColor.new("invalid color")
+            end
+            current_palette_index = color.pc
+            if color.pu > 0
+              palette[current_palette_index] = color
+            end
+          when RepeatIntroducer.ord
+            repeat_start = idx - 1
+            while idx < data.size
+              b2 = data[idx]
+              if (b2 < '0'.ord || b2 > '9'.ord) && (b2 < '?'.ord || b2 > '~'.ord)
+                break
+              end
+              idx += 1
+            end
+            repeat_slice = data[repeat_start...idx]
+            repeat, n = Sixel.decode_repeat(repeat_slice)
+            if n == 0
+              raise ErrInvalidRepeat.new("invalid repeat")
+            end
+            count = repeat.count
+            b = repeat.char.ord
+            # fallthrough to pixel drawing
+            if b >= '?'.ord && b <= '~'.ord
+              color = palette[current_palette_index]
+              count.times do
+                write_pixel(current_x, current_band_y, b, color, img)
+                current_x += 1
+              end
+            end
+          else
+            if b >= '?'.ord && b <= '~'.ord
+              color = palette[current_palette_index]
+              count.times do
+                write_pixel(current_x, current_band_y, b, color, img)
+                current_x += 1
+              end
+            end
+          end
+        end
+
+        img
+      end
+
+      private def write_pixel(x : Int32, band_y : Int32, sixel : UInt8, color : Ansi::Color, img : Ansi::RGBAImage) : Nil
+        masked_sixel = (sixel - '?'.ord) & 63
+        y_offset = 0
+        while masked_sixel != 0
+          if masked_sixel & 1 != 0
+            img.set(x, band_y * 6 + y_offset, color)
+          end
+          y_offset += 1
+          masked_sixel >>= 1
+        end
+      end
+
+      private def read_error(err : Exception) : Exception?
+        if err.is_a?(IO::EOFError)
+          nil
+        else
+          Exception.new("failed to read sixel data: #{err.message}", cause: err)
+        end
       end
     end
 

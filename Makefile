@@ -15,3 +15,6 @@ lint:
 
 test:
 	crystal spec
+
+clean:
+	rm -rf ./temp/*

@@ -94,3 +94,9 @@ When porting Go tests to Crystal specs:
 
 Example: If a Go test expects compressed data of specific size, replicate that check in Crystal even if Crystal's compression produces slightly different output.
 
+## File System Guidelines
+
+- Use `./temp` directory for temporary files created during testing or development
+- Never commit temporary files to git (they are already in `.gitignore`)
+- Clean up temporary files after use (the `make clean` rule removes `./temp` contents)
+
