@@ -71,6 +71,7 @@ module Ansi
       0
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def self.decode_color(data : Bytes) : {Color, Int32}
       n = 0
       return {Color.new, n} if data.empty? || data[0] != ColorIntroducer.ord
