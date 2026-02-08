@@ -582,6 +582,16 @@ module Ansi
       )
     end
 
+    def self.color_to_ansi(color : Color) : Ansi::Color
+      r16, g16, b16, a16 = color.rgba
+      Ansi::Color.new(
+        (r16 // 0x101_u32).to_u8,
+        (g16 // 0x101_u32).to_u8,
+        (b16 // 0x101_u32).to_u8,
+        (a16 // 0x101_u32).to_u8
+      )
+    end
+
     struct Palette
       getter palette_colors : Array(SixelColor)
 
@@ -782,13 +792,13 @@ module Ansi
 
         mask = @words[word_index] & (~0_u64 << bit_index)
         if mask != 0
-          return {(word_index * 64 + mask.trailing_zeros).to_i, true}
+          return {(word_index * 64 + mask.trailing_zeros_count).to_i, true}
         end
 
         (word_index + 1...@words.size).each do |idx|
           word = @words[idx]
           next if word == 0
-          return {(idx * 64 + word.trailing_zeros).to_i, true}
+          return {(idx * 64 + word.trailing_zeros_count).to_i, true}
         end
 
         {0, false}
@@ -881,9 +891,9 @@ module Ansi
               next
             end
             idx += read
+            bounds = {0, 0, raster.ph, raster.pv}
             break
           end
-          bounds = {0, 0, raster.ph, raster.pv}
         end
 
         if bounds.nil? || bounds[2] == 0 || bounds[3] == 0
@@ -892,7 +902,7 @@ module Ansi
           bounds = {0, 0, width, height}
         end
 
-        img = Ansi::RGBAImage.new(bounds[2], bounds[3])
+        img = Ansi::RGBAImage.new(bounds[2], bounds[3], Ansi::Color.new(0_u8, 0_u8, 0_u8, 0_u8))
         palette = Sixel.default_palette
         current_x = 0
         current_band_y = 0
@@ -925,24 +935,18 @@ module Ansi
             end
             current_palette_index = color.pc
             if color.pu > 0
-              palette[current_palette_index] = color
+              palette[current_palette_index] = Sixel.color_to_ansi(color)
             end
           when RepeatIntroducer.ord
-            repeat_start = idx - 1
-            while idx < data.size
-              b2 = data[idx]
-              if (b2 < '0'.ord || b2 > '9'.ord) && (b2 < '?'.ord || b2 > '~'.ord)
-                break
-              end
-              idx += 1
-            end
-            repeat_slice = data[repeat_start...idx]
-            repeat, n = Sixel.decode_repeat(repeat_slice)
+            # Get the run length for the RLE operation
+            repeat, n = Sixel.decode_repeat(data[idx - 1..])
             if n == 0
               raise ErrInvalidRepeat.new("invalid repeat")
             end
+            # 1 is added in the loop
+            idx += n - 1
             count = repeat.count
-            b = repeat.char.ord
+            b = repeat.char.ord.to_u8
             # fallthrough to pixel drawing
             if b >= '?'.ord && b <= '~'.ord
               color = palette[current_palette_index]
@@ -991,7 +995,7 @@ module Ansi
         return if image.width == 0 || image.height == 0
 
         Sixel.write_raster(io, 1, 1, image.width, image.height)
-        palette = new_palette(image, MaxColors)
+        palette = Sixel.new_palette(image, MaxColors)
 
         palette.palette_colors.each_with_index do |color, idx|
           io << ColorIntroducer << idx << ";2;" << color.red << ';' << color.green << ';' << color.blue
@@ -1014,13 +1018,13 @@ module Ansi
       end
 
       def band_height : Int32
-        bands = @height / 6
+        bands = @height // 6
         bands += 1 if (@height % 6) != 0
         bands
       end
 
       def set_color(x : Int32, y : Int32, color : Ansi::Color) : Nil
-        band_y = y / 6
+        band_y = y // 6
         palette_index = @palette.color_index(Sixel.sixel_convert_color(color))
         bit = band_height * @width * 6 * palette_index + band_y * @width * 6 + (x * 6) + (y % 6)
         @pixel_bands.set(bit)
