@@ -75,6 +75,120 @@ module Ansi
     end
   end
 
+  # HexColor is a color that can be formatted as a hex string.
+  struct HexColor
+    getter value : String
+
+    def initialize(@value : String)
+    end
+
+    # Parses a hex string to UInt32 color value
+    private def parse_hex : UInt32?
+      str = @value
+      return nil if str.empty?
+
+      # Remove leading '#'
+      if str[0] == '#'
+        str = str[1..]
+      end
+
+      case str.size
+      when 6 # RRGGBB
+        str.to_u32(16) rescue nil
+      when 3 # RGB
+        # Expand to RRGGBB: #RGB -> #RRGGBB
+        r = str[0].to_s * 2
+        g = str[1].to_s * 2
+        b = str[2].to_s * 2
+        (r + g + b).to_u32(16) rescue nil
+      when 8 # RRGGBBAA (ignore alpha for now, use RGB)
+        (str[0...6].to_u32(16) rescue nil)
+      else
+        nil
+      end
+    end
+
+    # Returns the underlying Color, or nil if invalid
+    private def color : Color?
+      hex_value = parse_hex
+      return nil unless hex_value
+
+      r, g, b = Ansi.hex_to_rgb(hex_value)
+      Color.new(r, g, b)
+    end
+
+    # RGBA returns the red, green, blue and alpha components of the color.
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      c = color
+      return {0_u32, 0_u32, 0_u32, 0_u32} unless c
+      c.rgba
+    end
+
+    # Hex returns the hex representation of the color.
+    def hex : String
+      c = color
+      return "" unless c
+      sprintf("#%02x%02x%02x", c.r, c.g, c.b)
+    end
+
+    # String returns the color as a hex string.
+    def to_s : String
+      hex
+    end
+  end
+
+  # XRGBColor is a color that can be formatted as an XParseColor rgb: string.
+  #
+  # See: https://linux.die.net/man/3/xparsecolor
+  struct XRGBColor
+    getter color : Color?
+
+    def initialize(@color : Color? = nil)
+    end
+
+    # RGBA returns the RGBA values of the color.
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      if color = @color
+        color.rgba
+      else
+        {0_u32, 0_u32, 0_u32, 0_u32}
+      end
+    end
+
+    # String returns the color as an XParseColor rgb: string.
+    def to_s : String
+      return "" unless @color
+      r, g, b, _ = rgba
+      sprintf("rgb:%04x/%04x/%04x", r, g, b)
+    end
+  end
+
+  # XRGBAColor is a color that can be formatted as an XParseColor rgba: string.
+  #
+  # See: https://linux.die.net/man/3/xparsecolor
+  struct XRGBAColor
+    getter color : Color?
+
+    def initialize(@color : Color? = nil)
+    end
+
+    # RGBA returns the RGBA values of the color.
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
+      if color = @color
+        color.rgba
+      else
+        {0_u32, 0_u32, 0_u32, 0_u32}
+      end
+    end
+
+    # String returns the color as an XParseColor rgba: string.
+    def to_s : String
+      return "" unless @color
+      r, g, b, a = rgba
+      sprintf("rgba:%04x/%04x/%04x/%04x", r, g, b, a)
+    end
+  end
+
   # ansi_to_rgb converts an ANSI color to a 24-bit RGB color.
   def self.ansi_to_rgb(ansi : UInt8) : Color
     ANSI_HEX[ansi]? || Color.black
