@@ -218,23 +218,129 @@ describe "Convert16 (from Go tests)" do
   end
 end
 
-# Pending tests for missing color types
+# Tests for color types
 describe "Color types (from Go implementation)" do
-  pending "implements BasicColor (ANSI 3/4-bit colors)" do
-    # Should have constants: Black, Red, Green, Yellow, Blue, Magenta, Cyan, White
-    # and their bright variants
+  describe "BasicColor (ANSI 3/4-bit colors)" do
+    it "has constants for standard ANSI colors" do
+      Ansi::BasicColor::Black.value.should eq 0_u8
+      Ansi::BasicColor::Red.value.should eq 1_u8
+      Ansi::BasicColor::Green.value.should eq 2_u8
+      Ansi::BasicColor::Yellow.value.should eq 3_u8
+      Ansi::BasicColor::Blue.value.should eq 4_u8
+      Ansi::BasicColor::Magenta.value.should eq 5_u8
+      Ansi::BasicColor::Cyan.value.should eq 6_u8
+      Ansi::BasicColor::White.value.should eq 7_u8
+      Ansi::BasicColor::BrightBlack.value.should eq 8_u8
+      Ansi::BasicColor::BrightRed.value.should eq 9_u8
+      Ansi::BasicColor::BrightGreen.value.should eq 10_u8
+      Ansi::BasicColor::BrightYellow.value.should eq 11_u8
+      Ansi::BasicColor::BrightBlue.value.should eq 12_u8
+      Ansi::BasicColor::BrightMagenta.value.should eq 13_u8
+      Ansi::BasicColor::BrightCyan.value.should eq 14_u8
+      Ansi::BasicColor::BrightWhite.value.should eq 15_u8
+    end
+
+    it "implements rgba method" do
+      color = Ansi::BasicColor.new(1_u8) # red
+      r, g, b, a = color.rgba
+      # Red is ANSI color 1 which maps to RGB 128, 0, 0
+      (r >> 8).should eq 128_u32
+      (g >> 8).should eq 0_u32
+      (b >> 8).should eq 0_u32
+      a.should eq 0xFFFF_u32
+    end
+
+    it "handles values out of range" do
+      # Values > 15 should still work (return black or some default)
+      color = Ansi::BasicColor.new(255_u8)
+      _, _, _, a = color.rgba
+      # Should return something valid
+      a.should eq 0xFFFF_u32
+    end
   end
 
-  pending "implements IndexedColor (ANSI 256 colors)" do
-    # Should represent colors 0-255
+  describe "IndexedColor (ANSI 256 colors)" do
+    it "represents colors 0-255" do
+      color0 = Ansi::IndexedColor.new(0_u8)
+      color0.value.should eq 0_u8
+
+      color255 = Ansi::IndexedColor.new(255_u8)
+      color255.value.should eq 255_u8
+    end
+
+    it "implements rgba method" do
+      # Test a few known colors
+      # ANSI color 1 (red)
+      color1 = Ansi::IndexedColor.new(1_u8)
+      r1, g1, b1, a1 = color1.rgba
+      (r1 >> 8).should eq 128_u32
+      (g1 >> 8).should eq 0_u32
+      (b1 >> 8).should eq 0_u32
+      a1.should eq 0xFFFF_u32
+
+      # ANSI color 231 (white from color cube)
+      color231 = Ansi::IndexedColor.new(231_u8)
+      r231, g231, b231, a231 = color231.rgba
+      (r231 >> 8).should eq 255_u32
+      (g231 >> 8).should eq 255_u32
+      (b231 >> 8).should eq 255_u32
+      a231.should eq 0xFFFF_u32
+    end
   end
 
-  pending "implements TrueColor (24-bit colors)" do
-    # Should represent 24-bit RGB colors
+  describe "TrueColor (24-bit colors)" do
+    it "represents 24-bit RGB colors" do
+      color = Ansi::TrueColor.new(0xFF0000_u32)
+      color.value.should eq 0xFF0000_u32
+    end
+
+    it "implements rgba method" do
+      # Test red
+      red = Ansi::TrueColor.new(0xFF0000_u32)
+      r1, g1, b1, a1 = red.rgba
+      (r1 >> 8).should eq 255_u32
+      (g1 >> 8).should eq 0_u32
+      (b1 >> 8).should eq 0_u32
+      a1.should eq 0xFFFF_u32
+
+      # Test green
+      green = Ansi::TrueColor.new(0x00FF00_u32)
+      r2, g2, b2, a2 = green.rgba
+      (r2 >> 8).should eq 0_u32
+      (g2 >> 8).should eq 255_u32
+      (b2 >> 8).should eq 0_u32
+      a2.should eq 0xFFFF_u32
+
+      # Test blue
+      blue = Ansi::TrueColor.new(0x0000FF_u32)
+      r3, g3, b3, a3 = blue.rgba
+      (r3 >> 8).should eq 0_u32
+      (g3 >> 8).should eq 0_u32
+      (b3 >> 8).should eq 255_u32
+      a3.should eq 0xFFFF_u32
+    end
   end
 
-  pending "implements Color interface for all color types" do
-    # All color types should implement RGBA() method
+  it "implements Color interface for all color types" do
+    # All color types should implement rgba method
+    basic = Ansi::BasicColor.new(1_u8)
+    indexed = Ansi::IndexedColor.new(1_u8)
+    true_color = Ansi::TrueColor.new(0xFF0000_u32)
+    ansi_color = Ansi::Color.new(255_u8, 0_u8, 0_u8)
+
+    # They should all respond to rgba
+    basic.responds_to?(:rgba).should be_true
+    indexed.responds_to?(:rgba).should be_true
+    true_color.responds_to?(:rgba).should be_true
+    ansi_color.responds_to?(:rgba).should be_true
+
+    # rgba should return a 4-tuple of UInt32
+    basic_rgba = basic.rgba
+    basic_rgba.size.should eq 4
+    basic_rgba[0].should be_a(UInt32)
+    basic_rgba[1].should be_a(UInt32)
+    basic_rgba[2].should be_a(UInt32)
+    basic_rgba[3].should be_a(UInt32)
   end
 end
 
