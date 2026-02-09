@@ -344,13 +344,87 @@ describe "Color types (from Go implementation)" do
   end
 end
 
-# Pending tests for color distance and quantization
+# Color distance and quantization
 describe "Color distance and quantization" do
-  pending "calculates color distance" do
-    # Needed for sixel palette quantization
+  it "calculates color distance" do
+    # Same color should have distance 0
+    Ansi.dist_sq(0, 0, 0, 0, 0, 0).should eq 0
+    Ansi.dist_sq(255, 255, 255, 255, 255, 255).should eq 0
+    Ansi.dist_sq(128, 64, 32, 128, 64, 32).should eq 0
+
+    # Black to white squared distance: 3 * 255^2 = 195075
+    Ansi.dist_sq(0, 0, 0, 255, 255, 255).should eq 195075
+
+    # Red to green: (255-0)^2 + (0-255)^2 + (0-0)^2 = 65025 + 65025 + 0 = 130050
+    Ansi.dist_sq(255, 0, 0, 0, 255, 0).should eq 130050
+
+    # Test with various values
+    Ansi.dist_sq(100, 150, 200, 100, 150, 200).should eq 0
+    Ansi.dist_sq(100, 150, 200, 101, 151, 201).should eq 3                # (1^2 + 1^2 + 1^2) = 3
+    Ansi.dist_sq(10, 20, 30, 40, 50, 60).should eq(30*30 + 30*30 + 30*30) # 2700
   end
 
-  pending "quantizes colors to limited palette" do
-    # Needed for sixel encoding
+  it "finds nearest color in palette" do
+    black = Ansi::Color.new(0_u8, 0_u8, 0_u8)
+    white = Ansi::Color.new(255_u8, 255_u8, 255_u8)
+    red = Ansi::Color.new(255_u8, 0_u8, 0_u8)
+    green = Ansi::Color.new(0_u8, 255_u8, 0_u8)
+    blue = Ansi::Color.new(0_u8, 0_u8, 255_u8)
+
+    palette = [black, white, red, green, blue]
+
+    # Black should map to black
+    Ansi.nearest_color_index(black, palette).should eq 0
+    Ansi.nearest_color(black, palette).should eq black
+
+    # Near-black dark gray should map to black
+    dark_gray = Ansi::Color.new(10_u8, 10_u8, 10_u8)
+    Ansi.nearest_color_index(dark_gray, palette).should eq 0
+    Ansi.nearest_color(dark_gray, palette).should eq black
+
+    # Near-white light gray should map to white
+    light_gray = Ansi::Color.new(240_u8, 240_u8, 240_u8)
+    Ansi.nearest_color_index(light_gray, palette).should eq 1
+    Ansi.nearest_color(light_gray, palette).should eq white
+
+    # Reddish color should map to red
+    dark_red = Ansi::Color.new(200_u8, 0_u8, 0_u8)
+    Ansi.nearest_color_index(dark_red, palette).should eq 2
+    Ansi.nearest_color(dark_red, palette).should eq red
+
+    # Empty palette returns -1 index and returns original color
+    Ansi.nearest_color_index(red, [] of Ansi::Color).should eq -1
+    Ansi.nearest_color(red, [] of Ansi::Color).should eq red
+  end
+
+  it "quantizes colors to limited palette" do
+    # Create 2x2 image with distinct colors
+    image = Ansi::RGBAImage.new(2, 2)
+    image.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8))   # red
+    image.set(0, 1, Ansi::Color.new(0_u8, 255_u8, 0_u8, 255_u8))   # green
+    image.set(1, 0, Ansi::Color.new(0_u8, 0_u8, 255_u8, 255_u8))   # blue
+    image.set(1, 1, Ansi::Color.new(255_u8, 255_u8, 0_u8, 255_u8)) # yellow
+
+    # Request palette with 2 colors (should quantize)
+    palette = Ansi::Sixel.new_palette(image, 2)
+    palette.palette_colors.size.should eq 2
+
+    # Colors should be some combination of the input colors
+    # (exact result depends on median cut algorithm)
+    # We'll just verify we got a valid palette
+    palette.palette_colors.each do |sixel_color|
+      sixel_color.red.should be <= 100_u32
+      sixel_color.green.should be <= 100_u32
+      sixel_color.blue.should be <= 100_u32
+      sixel_color.alpha.should be <= 100_u32
+    end
+
+    # Test with max colors equal to unique colors (no quantization needed)
+    palette2 = Ansi::Sixel.new_palette(image, 4)
+    palette2.palette_colors.size.should eq 4
+
+    # Test with more colors than unique colors (should return all unique colors)
+    palette3 = Ansi::Sixel.new_palette(image, 8)
+    palette3.palette_colors.size.should eq 4
   end
 end

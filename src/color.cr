@@ -179,8 +179,30 @@ module Ansi
   end
 
   # dist_sq calculates the squared distance between two colors.
-  private def self.dist_sq(r1 : Int32, g1 : Int32, b1 : Int32, r2 : Int32, g2 : Int32, b2 : Int32) : Int32
+  def self.dist_sq(r1 : Int32, g1 : Int32, b1 : Int32, r2 : Int32, g2 : Int32, b2 : Int32) : Int32
     ((r1 - r2) * (r1 - r2) + (g1 - g2) * (g1 - g2) + (b1 - b2) * (b1 - b2))
+  end
+
+  # nearest_color_index finds the index of the nearest color in the palette to the given color.
+  def self.nearest_color_index(color : Color, palette : Array(Color)) : Int32
+    return -1 if palette.empty?
+    min_dist = Int32::MAX
+    min_index = 0
+    palette.each_with_index do |pal_color, i|
+      dist = dist_sq(color.r.to_i32, color.g.to_i32, color.b.to_i32,
+        pal_color.r.to_i32, pal_color.g.to_i32, pal_color.b.to_i32)
+      if dist < min_dist
+        min_dist = dist
+        min_index = i
+      end
+    end
+    min_index
+  end
+
+  # nearest_color finds the nearest color in the palette to the given color.
+  def self.nearest_color(color : Color, palette : Array(Color)) : Color
+    index = nearest_color_index(color, palette)
+    index >= 0 ? palette[index] : color
   end
 
   # Convert Color to Colorful::Color
