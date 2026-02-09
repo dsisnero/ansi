@@ -4,6 +4,7 @@ Version: "1.7.0-dev"
 Lint/Formatting:
   Excluded:
     - spec/**/*.cr
+    - temp/**/*.cr
 
 Lint/NotNil:
   Excluded:

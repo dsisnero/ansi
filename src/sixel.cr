@@ -1077,6 +1077,7 @@ module Ansi
           end
         end
 
+        write_control_rune(LineBreak)
         @image_data.to_s
       end
 

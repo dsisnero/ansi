@@ -607,9 +607,7 @@ describe Ansi::Sixel do
       end
     end
 
-    pending "3x12 8 color with right gutter" do
-      # BUG: This test fails due to palette/repeat handling issue
-      # TODO: Fix encoder/decoder for 8-color images
+    it "3x12 8 color with right gutter" do
       image_width = 3
       image_height = 12
       img = Ansi::RGBAImage.new(image_width, image_height, Ansi::Color.new(0_u8, 0_u8, 0_u8, 0_u8))
@@ -640,6 +638,16 @@ describe Ansi::Sixel do
         33 => Ansi::Color.new(64_u8, 0_u8, 0_u8, 255_u8),
         35 => Ansi::Color.new(0_u8, 64_u8, 0_u8, 255_u8),
       }
+
+      current_color = Ansi::Color.new(0_u8, 0_u8, 0_u8, 0_u8)
+      image_height.times do |y|
+        image_width.times do |x|
+          index = y * image_width + x
+          new_color = colors[index]?
+          current_color = new_color if new_color
+          img.set(x, y, current_color)
+        end
+      end
 
       io = IO::Memory.new
       encoder = Ansi::Sixel::Encoder.new
