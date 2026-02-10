@@ -14,33 +14,33 @@ module Ansi
     RGB  =  24
     PNG  = 100
 
-    Zlib = 'z'
+    Zlib = 'z'.ord.to_u8
 
-    Direct       = 'd'
-    File         = 'f'
-    TempFile     = 't'
-    SharedMemory = 's'
+    Direct       = 'd'.ord.to_u8
+    File         = 'f'.ord.to_u8
+    TempFile     = 't'.ord.to_u8
+    SharedMemory = 's'.ord.to_u8
 
-    Transmit       = 't'
-    TransmitAndPut = 'T'
-    Query          = 'q'
-    Put            = 'p'
-    Delete         = 'd'
-    Frame          = 'f'
-    Animate        = 'a'
-    Compose        = 'c'
+    Transmit       = 't'.ord.to_u8
+    TransmitAndPut = 'T'.ord.to_u8
+    Query          = 'q'.ord.to_u8
+    Put            = 'p'.ord.to_u8
+    Delete         = 'd'.ord.to_u8
+    Frame          = 'f'.ord.to_u8
+    Animate        = 'a'.ord.to_u8
+    Compose        = 'c'.ord.to_u8
 
-    DeleteAll    = 'a'
-    DeleteID     = 'i'
-    DeleteNumber = 'n'
-    DeleteCursor = 'c'
-    DeleteFrames = 'f'
-    DeleteCell   = 'p'
-    DeleteCellZ  = 'q'
-    DeleteRange  = 'r'
-    DeleteColumn = 'x'
-    DeleteRow    = 'y'
-    DeleteZ      = 'z'
+    DeleteAll    = 'a'.ord.to_u8
+    DeleteID     = 'i'.ord.to_u8
+    DeleteNumber = 'n'.ord.to_u8
+    DeleteCursor = 'c'.ord.to_u8
+    DeleteFrames = 'f'.ord.to_u8
+    DeleteCell   = 'p'.ord.to_u8
+    DeleteCellZ  = 'q'.ord.to_u8
+    DeleteRange  = 'r'.ord.to_u8
+    DeleteColumn = 'x'.ord.to_u8
+    DeleteRow    = 'y'.ord.to_u8
+    DeleteZ      = 'z'.ord.to_u8
 
     GraphicsTempDir     = ""
     GraphicsTempPattern = "tty-graphics-protocol-*"
@@ -51,7 +51,7 @@ module Ansi
     end
 
     struct Options
-      property action : Char
+      property action : UInt8
       property quite : UInt8
       property id : Int32
       property placement_id : Int32
@@ -59,8 +59,8 @@ module Ansi
       property format : Int32
       property image_width : Int32
       property image_height : Int32
-      property compression : Char
-      property transmission : Char
+      property compression : UInt8
+      property transmission : UInt8
       property file : String
       property size : Int32
       property offset : Int32
@@ -79,11 +79,11 @@ module Ansi
       property? do_not_move_cursor : Bool
       property parent_id : Int32
       property parent_placement_id : Int32
-      property delete : Char
+      property delete : UInt8
       property? delete_resources : Bool
 
       def initialize
-        @action = '\0'
+        @action = 0_u8
         @quite = 0_u8
         @id = 0
         @placement_id = 0
@@ -91,8 +91,8 @@ module Ansi
         @format = 0
         @image_width = 0
         @image_height = 0
-        @compression = '\0'
-        @transmission = '\0'
+        @compression = 0_u8
+        @transmission = 0_u8
         @file = ""
         @size = 0
         @offset = 0
@@ -111,7 +111,7 @@ module Ansi
         @do_not_move_cursor = false
         @parent_id = 0
         @parent_placement_id = 0
-        @delete = '\0'
+        @delete = 0_u8
         @delete_resources = false
       end
 
@@ -119,10 +119,10 @@ module Ansi
       def options : Array(String)
         opts = [] of String
         @format = RGBA if @format == 0
-        @action = Transmit if @action == '\0'
-        @delete = DeleteAll if @delete == '\0'
+        @action = Transmit if @action == 0
+        @delete = DeleteAll if @delete == 0
 
-        if @transmission == '\0'
+        if @transmission == 0
           @transmission = @file.empty? ? Direct : File
         end
 
@@ -133,10 +133,10 @@ module Ansi
         opts << "I=#{@number}" if @number > 0
         opts << "s=#{@image_width}" if @image_width > 0
         opts << "v=#{@image_height}" if @image_height > 0
-        opts << "t=#{@transmission}" if @transmission != Direct
+        opts << "t=#{@transmission.chr}" if @transmission != Direct
         opts << "S=#{@size}" if @size > 0
         opts << "O=#{@offset}" if @offset > 0
-        opts << "o=#{@compression}" if @compression == Zlib
+        opts << "o=#{@compression.chr}" if @compression == Zlib
         opts << "U=1" if @virtual_placement
         opts << "C=1" if @do_not_move_cursor
         opts << "P=#{@parent_id}" if @parent_id > 0
@@ -152,11 +152,11 @@ module Ansi
         opts << "r=#{@rows}" if @rows > 0
 
         if @delete != DeleteAll || @delete_resources
-          delete_action = @delete_resources ? (@delete.ord - 32).chr : @delete
+          delete_action = @delete_resources ? (@delete - 32).chr : @delete.chr
           opts << "d=#{delete_action}"
         end
 
-        opts << "a=#{@action}" if @action != Transmit
+        opts << "a=#{@action.chr}" if @action != Transmit
         opts
       end
 
@@ -183,16 +183,16 @@ module Ansi
 
           case key
           when "a"
-            @action = value[0]
+            @action = value[0].ord.to_u8
           when "o"
-            @compression = value[0]
+            @compression = value[0].ord.to_u8
           when "t"
-            @transmission = value[0]
+            @transmission = value[0].ord.to_u8
           when "d"
-            d = value[0]
-            if d >= 'A' && d <= 'Z'
+            d = value[0].ord.to_u8
+            if d >= 'A'.ord.to_u8 && d <= 'Z'.ord.to_u8
               @delete_resources = true
-              d = (d.ord + 32).chr
+              d = (d + 32).to_u8
             end
             @delete = d
           when "i", "q", "p", "I", "f", "s", "v", "S", "O", "m", "x", "y", "z", "w", "h", "X", "Y", "c", "r", "U", "P", "Q"
@@ -361,7 +361,7 @@ module Ansi
     def self.encode_graphics(io : IO, image : Ansi::Image?, options : Options?) : Nil
       opts = options || Options.new
 
-      if opts.transmission == '\0' && !opts.file.empty?
+      if opts.transmission == 0 && !opts.file.empty?
         opts.transmission = File
       end
 

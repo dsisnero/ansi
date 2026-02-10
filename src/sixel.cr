@@ -2,11 +2,11 @@ require "colorful"
 
 module Ansi
   module Sixel
-    LineBreak        = '-'
-    CarriageReturn   = '$'
-    RepeatIntroducer = '!'
-    ColorIntroducer  = '#'
-    RasterAttribute  = '"'
+    LineBreak        = '-'.ord.to_u8
+    CarriageReturn   = '$'.ord.to_u8
+    RepeatIntroducer = '!'.ord.to_u8
+    ColorIntroducer  = '#'.ord.to_u8
+    RasterAttribute  = '"'.ord.to_u8
 
     MaxColors =     256
     ST        = 0x9C_u8
@@ -27,10 +27,12 @@ module Ansi
         return write_raster(io, 1, 1, ph, pv)
       end
       if ph <= 0 && pv <= 0
-        io << RasterAttribute << pan << ';' << pad
+        io.write_byte(RasterAttribute)
+        io << pan << ';' << pad
         return 0
       end
-      io << RasterAttribute << pan << ';' << pad << ';' << ph << ';' << pv
+      io.write_byte(RasterAttribute)
+      io << pan << ';' << pad << ';' << ph << ';' << pv
       0
     end
 
@@ -49,7 +51,8 @@ module Ansi
     end
 
     def self.write_repeat(io : IO, count : Int32, char : Char) : Int32
-      io << RepeatIntroducer << count << char
+      io.write_byte(RepeatIntroducer)
+      io << count << char
       0
     end
 
@@ -67,17 +70,19 @@ module Ansi
 
     def self.write_color(io : IO, pc : Int32, pu : Int32, px : Int32, py : Int32, pz : Int32) : Int32
       if pu <= 0 || pu > 2
-        io << ColorIntroducer << pc
+        io.write_byte(ColorIntroducer)
+        io << pc
         return 0
       end
-      io << ColorIntroducer << pc << ';' << pu << ';' << px << ';' << py << ';' << pz
+      io.write_byte(ColorIntroducer)
+      io << pc << ';' << pu << ';' << px << ';' << py << ';' << pz
       0
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
     def self.decode_color(data : Bytes) : {Color, Int32}
       n = 0
-      return {Color.new, n} if data.empty? || data[0] != ColorIntroducer.ord
+      return {Color.new, n} if data.empty? || data[0] != ColorIntroducer
       if data.size < 2
         return {Color.new, n}
       end
@@ -147,7 +152,7 @@ module Ansi
 
     def self.decode_raster(data : Bytes) : {Raster, Int32}
       n = 0
-      return {Raster.new(0, 0, 0, 0), n} if data.empty? || data[0] != RasterAttribute.ord
+      return {Raster.new(0, 0, 0, 0), n} if data.empty? || data[0] != RasterAttribute
 
       pan = 0
       pad = 0
@@ -183,7 +188,7 @@ module Ansi
     def self.decode_repeat(data : Bytes) : {Repeat, Int32}
       r = Repeat.new(0, '\0')
       n = 0
-      return {r, n} if data.empty? || data[0] != RepeatIntroducer.ord
+      return {r, n} if data.empty? || data[0] != RepeatIntroducer
 
       # Minimum length is 3: introducer, at least one digit, and a character
       if data.size < 3
@@ -822,6 +827,65 @@ module Ansi
     end
 
     class Decoder
+      private def read_raster_bounds(data : Bytes, idx : Int32) : {Tuple(Int32, Int32, Int32, Int32)?, Int32}
+        return {nil, idx} unless idx < data.size && data[idx] == RasterAttribute
+
+        n = 16
+        loop do
+          slice = data[idx, Math.min(n, data.size - idx)]
+          raster, read = Sixel.decode_raster(slice)
+          raise ErrInvalidRaster.new("invalid raster") if read == 0
+          if read >= n && idx + n < data.size
+            n *= 2
+            next
+          end
+          idx += read
+          return { {0, 0, raster.ph, raster.pv}, idx }
+        end
+      end
+
+      private def resolve_bounds(data : Bytes, idx : Int32, bounds : Tuple(Int32, Int32, Int32, Int32)?) : Tuple(Int32, Int32, Int32, Int32)
+        return bounds.not_nil! if bounds && bounds[2] > 0 && bounds[3] > 0
+
+        width, height = scan_size(data[idx..])
+        {0, 0, width, height}
+      end
+
+      private def parse_color(data : Bytes, idx : Int32) : {Color, Int32}
+        color_start = idx - 1
+        while idx < data.size
+          b2 = data[idx]
+          break if (b2 < '0'.ord || b2 > '9'.ord) && b2 != ';'.ord
+          idx += 1
+        end
+        color_slice = data[color_start...idx]
+        color, n = Sixel.decode_color(color_slice)
+        raise ErrInvalidColor.new("invalid color") if n == 0
+        {color, idx}
+      end
+
+      private def parse_repeat(data : Bytes, idx : Int32) : {Repeat, Int32}
+        repeat, n = Sixel.decode_repeat(data[idx - 1..])
+        raise ErrInvalidRepeat.new("invalid repeat") if n == 0
+        idx += n - 1
+        {repeat, idx}
+      end
+
+      private def sixel_pixel?(b : UInt8) : Bool
+        b >= '?'.ord.to_u8 && b <= '~'.ord.to_u8
+      end
+
+      private def draw_sixel_run(count : Int32, sixel : UInt8, color : Ansi::Color, current_x : Int32, band_y : Int32, img : Ansi::RGBAImage) : Int32
+        return current_x unless sixel_pixel?(sixel)
+
+        x = current_x
+        count.times do
+          write_pixel(x, band_y, sixel, color, img)
+          x += 1
+        end
+        x
+      end
+
       def scan_size(data : Bytes) : {Int32, Int32}
         max_width = 0
         band_count = 0
@@ -832,18 +896,18 @@ module Ansi
         while i < data.size
           b = data[i]
           case b
-          when LineBreak.ord
+          when LineBreak
             # LF
             current_width = 0
             # The image may end with an LF, so we shouldn't increment the band
             # count until we encounter a pixel
             new_band = true
-          when CarriageReturn.ord
+          when CarriageReturn
             # CR
             current_width = 0
-          when RepeatIntroducer.ord, '?'.ord..'~'.ord
+          when RepeatIntroducer, '?'.ord.to_u8..'~'.ord.to_u8
             count = 1
-            if b == RepeatIntroducer.ord
+            if b == RepeatIntroducer
               # Get the run length for the RLE operation
               repeat, n = Sixel.decode_repeat(data[i..])
               if n == 0
@@ -869,39 +933,13 @@ module Ansi
         {max_width, band_count * 6}
       end
 
-      # ameba:disable Metrics/CyclomaticComplexity
       def decode(io : IO) : Ansi::RGBAImage
         # Read all data from IO
         data = io.gets_to_end.to_slice
         idx = 0
 
-        bounds = nil
-        raster = nil
-
-        # Check for raster attribute
-        if idx < data.size && data[idx] == RasterAttribute.ord
-          n = 16
-          loop do
-            slice = data[idx, Math.min(n, data.size - idx)]
-            raster, read = Sixel.decode_raster(slice)
-            if read == 0
-              raise ErrInvalidRaster.new("invalid raster")
-            end
-            if read >= n && idx + n < data.size
-              n *= 2
-              next
-            end
-            idx += read
-            bounds = {0, 0, raster.ph, raster.pv}
-            break
-          end
-        end
-
-        if bounds.nil? || bounds[2] == 0 || bounds[3] == 0
-          # Need to scan size from remaining data
-          width, height = scan_size(data[idx..])
-          bounds = {0, 0, width, height}
-        end
+        bounds, idx = read_raster_bounds(data, idx)
+        bounds = resolve_bounds(data, idx, bounds)
 
         img = Ansi::RGBAImage.new(bounds[2], bounds[3], Ansi::Color.new(0_u8, 0_u8, 0_u8, 0_u8))
         palette = Sixel.default_palette
@@ -912,58 +950,23 @@ module Ansi
         while idx < data.size
           b = data[idx]
           idx += 1
-          count = 1
-
           case b
-          when LineBreak.ord
+          when LineBreak
             current_band_y += 1
             current_x = 0
-          when CarriageReturn.ord
+          when CarriageReturn
             current_x = 0
-          when ColorIntroducer.ord
-            color_start = idx - 1
-            while idx < data.size
-              b2 = data[idx]
-              if (b2 < '0'.ord || b2 > '9'.ord) && b2 != ';'.ord
-                break
-              end
-              idx += 1
-            end
-            color_slice = data[color_start...idx]
-            color, n = Sixel.decode_color(color_slice)
-            if n == 0
-              raise ErrInvalidColor.new("invalid color")
-            end
+          when ColorIntroducer
+            color, idx = parse_color(data, idx)
             current_palette_index = color.pc
             if color.pu > 0
               palette[current_palette_index] = Sixel.color_to_ansi(color)
             end
-          when RepeatIntroducer.ord
-            # Get the run length for the RLE operation
-            repeat, n = Sixel.decode_repeat(data[idx - 1..])
-            if n == 0
-              raise ErrInvalidRepeat.new("invalid repeat")
-            end
-            # 1 is added in the loop
-            idx += n - 1
-            count = repeat.count
-            b = repeat.char.ord.to_u8
-            # fallthrough to pixel drawing
-            if b >= '?'.ord && b <= '~'.ord
-              color = palette[current_palette_index]
-              count.times do
-                write_pixel(current_x, current_band_y, b, color, img)
-                current_x += 1
-              end
-            end
+          when RepeatIntroducer
+            repeat, idx = parse_repeat(data, idx)
+            current_x = draw_sixel_run(repeat.count, repeat.char.ord.to_u8, palette[current_palette_index], current_x, current_band_y, img)
           else
-            if b >= '?'.ord && b <= '~'.ord
-              color = palette[current_palette_index]
-              count.times do
-                write_pixel(current_x, current_band_y, b, color, img)
-                current_x += 1
-              end
-            end
+            current_x = draw_sixel_run(1, b, palette[current_palette_index], current_x, current_band_y, img)
           end
         end
 
@@ -999,7 +1002,8 @@ module Ansi
         palette = Sixel.new_palette(image, MaxColors)
 
         palette.palette_colors.each_with_index do |color, idx|
-          io << ColorIntroducer << idx << ";2;" << color.red << ';' << color.green << ';' << color.blue
+          io.write_byte(ColorIntroducer)
+          io << idx << ";2;" << color.red << ';' << color.green << ';' << color.blue
         end
 
         builder = SixelBuilder.new(image.width, image.height, palette)
@@ -1036,7 +1040,7 @@ module Ansi
         band_count = band_height
 
         band_count.times do |band_y|
-          write_control_rune(LineBreak) if band_y > 0
+          write_control_rune(LineBreak.chr) if band_y > 0
           has_written_color = false
 
           @palette.palette_colors.size.times do |palette_index|
@@ -1048,11 +1052,11 @@ module Ansi
             next if !any_set || first_set_bit >= next_color_bit
 
             if has_written_color
-              write_control_rune(CarriageReturn)
+              write_control_rune(CarriageReturn.chr)
             end
             has_written_color = true
 
-            write_control_rune(ColorIntroducer)
+            write_control_rune(ColorIntroducer.chr)
             @image_data << palette_index
 
             x = 0
@@ -1078,7 +1082,7 @@ module Ansi
           end
         end
 
-        write_control_rune(LineBreak)
+        write_control_rune(LineBreak.chr)
         @image_data.to_s
       end
 
@@ -1109,7 +1113,7 @@ module Ansi
         if @repeat_count == 1
           @image_data << @repeat_byte
         else
-          @image_data << RepeatIntroducer << @repeat_count << @repeat_byte
+          @image_data << RepeatIntroducer.chr << @repeat_count << @repeat_byte
         end
         @repeat_count = 0
         @repeat_byte = '\0'

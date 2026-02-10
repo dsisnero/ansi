@@ -8,6 +8,7 @@ require "./mode"
 require "./modes"
 require "./mouse"
 require "./urxvt"
+require "./focus"
 require "./parser_transition"
 require "./parser_handler"
 require "./parser"
@@ -23,6 +24,17 @@ require "./c1"
 require "./charset"
 require "./ctrl"
 require "./cursor"
+require "./keypad"
+require "./paste"
+require "./finalterm"
+require "./inband"
+require "./passthrough"
+require "./reset"
+require "./screen"
+require "./status"
+require "./termcap"
+require "./winop"
+require "./xterm"
 require "base64"
 require "uri"
 require "path"
@@ -72,17 +84,16 @@ module Ansi
   # terminal emulators.
   #
   # See https://man7.org/linux/man-pages/man4/console_codes.4.html
-  def self.set_palette(index : Int32, color : Ansi::Color? | Colorful::Color? = nil) : String
+  def self.set_palette(index : Int32, color : Ansi::PaletteColor? = nil) : String
     return "" if color.nil? || index < 0 || index > 15
     case color
-    when Ansi::Color
-      r = color.r
-      g = color.g
-      b = color.b
     when Colorful::Color
       r, g, b = color.rgb255
     else
-      return ""
+      r32, g32, b32, _ = color.rgba
+      r = (r32 >> 8).to_u8
+      g = (g32 >> 8).to_u8
+      b = (b32 >> 8).to_u8
     end
     sprintf("\e]P%x%02x%02x%02x\a", index, r, g, b)
   end
@@ -346,8 +357,8 @@ module Ansi
   end
 
   # Clipboard names.
-  SystemClipboard  = 'c'
-  PrimaryClipboard = 'p'
+  SystemClipboard  = 'c'.ord.to_u8
+  PrimaryClipboard = 'p'.ord.to_u8
 
   # SetClipboard returns a sequence for manipulating the clipboard.
   #
@@ -358,11 +369,15 @@ module Ansi
   # Empty data or invalid base64 data will reset the clipboard.
   #
   # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
-  def self.set_clipboard(c : Char, d : String) : String
+  def self.set_clipboard(c : UInt8, d : String) : String
     if d != ""
       d = Base64.strict_encode(d.to_slice)
     end
-    "\e]52;#{c};#{d}\a"
+    "\e]52;#{c.chr};#{d}\a"
+  end
+
+  def self.set_clipboard(c : Char, d : String) : String
+    set_clipboard(c.ord.to_u8, d)
   end
 
   # SetSystemClipboard returns a sequence for setting the system clipboard.
@@ -386,6 +401,10 @@ module Ansi
   # This is equivalent to SetClipboard(c, "").
   #
   # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  def self.reset_clipboard(c : UInt8) : String
+    set_clipboard(c, "")
+  end
+
   def self.reset_clipboard(c : Char) : String
     set_clipboard(c, "")
   end
@@ -403,8 +422,12 @@ module Ansi
   # RequestClipboard returns a sequence for requesting the clipboard.
   #
   # See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands
+  def self.request_clipboard(c : UInt8) : String
+    "\e]52;#{c.chr};?\a"
+  end
+
   def self.request_clipboard(c : Char) : String
-    "\e]52;#{c};?\a"
+    request_clipboard(c.ord.to_u8)
   end
 
   # RequestSystemClipboard is a sequence for requesting the system clipboard.

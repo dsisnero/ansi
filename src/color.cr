@@ -1,6 +1,8 @@
 require "colorful"
 
 module Ansi
+  alias PaletteColor = Color | BasicColor | IndexedColor | TrueColor | HexColor | XRGBColor | XRGBAColor | Colorful::Color
+
   struct Color
     getter r : UInt8
     getter g : UInt8

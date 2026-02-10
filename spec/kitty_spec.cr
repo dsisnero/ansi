@@ -167,14 +167,14 @@ describe Ansi::Kitty do
     end
 
     it "has compression constant" do
-      Ansi::Kitty::Zlib.should eq 'z'
+      Ansi::Kitty::Zlib.should eq 'z'.ord.to_u8
     end
 
     it "has transmission mode constants" do
-      Ansi::Kitty::Direct.should eq 'd'
-      Ansi::Kitty::File.should eq 'f'
-      Ansi::Kitty::TempFile.should eq 't'
-      Ansi::Kitty::SharedMemory.should eq 's'
+      Ansi::Kitty::Direct.should eq 'd'.ord.to_u8
+      Ansi::Kitty::File.should eq 'f'.ord.to_u8
+      Ansi::Kitty::TempFile.should eq 't'.ord.to_u8
+      Ansi::Kitty::SharedMemory.should eq 's'.ord.to_u8
     end
   end
 

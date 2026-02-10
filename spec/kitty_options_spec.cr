@@ -112,8 +112,8 @@ describe "Ansi::Kitty::Options" do
         options: begin
           o = Ansi::Kitty::Options.new
           o.format = 0
-          o.action = '\0'
-          o.delete = '\0'
+          o.action = 0_u8
+          o.delete = 0_u8
           o
         end,
         expected: [] of String,
@@ -175,11 +175,11 @@ describe "Ansi::Kitty::Options" do
         name:    "full options",
         options: begin
           o = Ansi::Kitty::Options.new
-          o.action = 'A'
+          o.action = 'A'.ord.to_u8
           o.quite = 'Q'.ord.to_u8
-          o.compression = 'C'
-          o.transmission = 'T'
-          o.delete = 'd'
+          o.compression = 'C'.ord.to_u8
+          o.transmission = 'T'.ord.to_u8
+          o.delete = 'd'.ord.to_u8
           o.delete_resources = true
           o.id = 123
           o.placement_id = 456
@@ -224,7 +224,7 @@ describe "Ansi::Kitty::Options" do
         name:    "marshal with values",
         options: begin
           o = Ansi::Kitty::Options.new
-          o.action = 'A'
+          o.action = 'A'.ord.to_u8
           o.id = 123
           o.width = 400
           o.height = 500
@@ -253,7 +253,7 @@ describe "Ansi::Kitty::Options" do
         text: "a=A,i=123,w=400,h=500".to_slice,
         want: begin
           o = Ansi::Kitty::Options.new
-          o.action = 'A'
+          o.action = 'A'.ord.to_u8
           o.id = 123
           o.width = 400
           o.height = 500
@@ -270,7 +270,7 @@ describe "Ansi::Kitty::Options" do
         text: "d=D".to_slice,
         want: begin
           o = Ansi::Kitty::Options.new
-          o.delete = 'd'
+          o.delete = 'd'.ord.to_u8
           o.delete_resources = true
           o
         end,

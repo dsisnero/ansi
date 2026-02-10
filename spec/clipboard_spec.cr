@@ -51,11 +51,11 @@ describe "Ansi clipboard functions" do
 
   describe "constants" do
     it "SystemClipboard is 'c'" do
-      Ansi::SystemClipboard.should eq 'c'
+      Ansi::SystemClipboard.should eq 'c'.ord.to_u8
     end
 
     it "PrimaryClipboard is 'p'" do
-      Ansi::PrimaryClipboard.should eq 'p'
+      Ansi::PrimaryClipboard.should eq 'p'.ord.to_u8
     end
 
     it "ResetSystemClipboard is correct" do
