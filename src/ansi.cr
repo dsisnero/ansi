@@ -3,8 +3,10 @@ require "./style"
 require "./image"
 require "./iterm2"
 require "./kitty"
+require "./kitty_keyboard"
 require "./sixel"
 require "./mode"
+require "./mode_deprecated"
 require "./modes"
 require "./mouse"
 require "./urxvt"
@@ -41,6 +43,14 @@ require "path"
 require "colorful"
 
 module Ansi
+  # Execute writes the given escape sequence to the provided output.
+  #
+  # This is a syntactic sugar over IO#write.
+  def self.execute(io : IO, s : String) : Int32
+    io << s
+    s.bytesize
+  end
+
   def self.iterm2(data : String) : String
     "\e]1337;#{data}\a"
   end

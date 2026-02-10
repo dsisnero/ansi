@@ -1,7 +1,7 @@
 require "colorful"
 
 module Ansi
-  alias PaletteColor = Color | BasicColor | IndexedColor | TrueColor | HexColor | XRGBColor | XRGBAColor | Colorful::Color
+  alias PaletteColor = Color | BasicColor | IndexedColor | ExtendedColor | TrueColor | RGBColor | HexColor | XRGBColor | XRGBAColor | Colorful::Color
 
   struct Color
     getter r : UInt8
@@ -63,6 +63,11 @@ module Ansi
     end
   end
 
+  # ExtendedColor is an ANSI 256 (8-bit) color with a value from 0 to 255.
+  #
+  # Deprecated: use [IndexedColor] instead.
+  alias ExtendedColor = IndexedColor
+
   # TrueColor is a 24-bit color that can be used in the terminal.
   # This can be used to represent RGB colors.
   struct TrueColor
@@ -73,6 +78,21 @@ module Ansi
 
     def rgba : {UInt32, UInt32, UInt32, UInt32}
       r, g, b = Ansi.hex_to_rgb(value)
+      {r.to_u32 * 0x101_u32, g.to_u32 * 0x101_u32, b.to_u32 * 0x101_u32, 0xFFFF_u32}
+    end
+  end
+
+  # RGBColor is a 24-bit color that can be used in the terminal.
+  # This can be used to represent RGB colors.
+  struct RGBColor
+    getter r : UInt8
+    getter g : UInt8
+    getter b : UInt8
+
+    def initialize(@r : UInt8, @g : UInt8, @b : UInt8)
+    end
+
+    def rgba : {UInt32, UInt32, UInt32, UInt32}
       {r.to_u32 * 0x101_u32, g.to_u32 * 0x101_u32, b.to_u32 * 0x101_u32, 0xFFFF_u32}
     end
   end

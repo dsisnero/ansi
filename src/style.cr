@@ -231,6 +231,18 @@ module Ansi
       Dashed
     end
 
+    # UnderlineStyle represents an ANSI underline style.
+    # Deprecated: use [Underline] instead.
+    alias UnderlineStyle = Underline
+
+    # Underline styles constants.
+    UnderlineNone   = Underline::None
+    UnderlineSingle = Underline::Single
+    UnderlineDouble = Underline::Double
+    UnderlineCurly  = Underline::Curly
+    UnderlineDotted = Underline::Dotted
+    UnderlineDashed = Underline::Dashed
+
     # Underline styles constants (deprecated aliases for compatibility)
     NoUnderlineStyle     = Underline::None
     SingleUnderlineStyle = Underline::Single
@@ -457,6 +469,8 @@ module Ansi
   AttrBrightMagentaBackgroundColor = 105
   AttrBrightCyanBackgroundColor    = 106
   AttrBrightWhiteBackgroundColor   = 107
+  AttrRGBColorIntroducer           =   2
+  AttrExtendedColorIntroducer      =   5
 
   # Deprecated: use Attr* constants instead.
   ResetAttr                        = AttrReset
@@ -514,6 +528,8 @@ module Ansi
   BrightMagentaBackgroundColorAttr = AttrBrightMagentaBackgroundColor
   BrightCyanBackgroundColorAttr    = AttrBrightCyanBackgroundColor
   BrightWhiteBackgroundColorAttr   = AttrBrightWhiteBackgroundColor
+  RGBColorIntroducerAttr           = AttrRGBColorIntroducer
+  ExtendedColorIntroducerAttr      = AttrExtendedColorIntroducer
 
   # Mapping from Attr to string representation
   private ATTR_STRINGS = {
@@ -573,4 +589,101 @@ module Ansi
     AttrBrightCyanBackgroundColor    => "106",
     AttrBrightWhiteBackgroundColor   => "107",
   }
+end
+
+private def self.cmyk_to_rgb(c : Int32, m : Int32, y : Int32, k : Int32) : {UInt8, UInt8, UInt8}
+  r = (255 - c) * (255 - k) // 255
+  g = (255 - m) * (255 - k) // 255
+  b = (255 - y) * (255 - k) // 255
+  {r.to_u8, g.to_u8, b.to_u8}
+end
+
+# ReadStyleColor decodes a color from a slice of parameters. It returns the
+# number of parameters read and the color. This function is used to read SGR
+# color parameters following the ITU T.416 standard.
+#
+# It supports reading the following color types:
+#   - 0: implementation defined
+#   - 1: transparent
+#   - 2: RGB direct color
+#   - 3: CMY direct color
+#   - 4: CMYK direct color
+#   - 5: indexed color
+#   - 6: RGBA direct color (WezTerm extension)
+#
+# The parameters can be separated by semicolons (;) or colons (:). Mixing
+# separators is not allowed.
+def self.read_style_color(params : Params) : {Int32, PaletteColor?}
+  return {0, nil} if params.size < 2
+
+  s, s_more, s_ok = params.param(0, 0)
+  p, p_more, p_ok = params.param(1, 0)
+  return {0, nil} unless s_ok && p_ok
+
+  color_type = p
+  n = 2
+
+  get_param = ->(idx : Int32) { params.param(idx, 0)[0] }
+  has_more = ->(idx : Int32) { params.param(idx, 0)[1] }
+
+  paramsfn = -> {
+    if s_more && p_more && params.size > 8 && has_more.call(2) && has_more.call(3) && has_more.call(4) && has_more.call(5) && has_more.call(6) && has_more.call(7)
+      n += 7
+      {get_param.call(3), get_param.call(4), get_param.call(5), get_param.call(6)}
+    elsif s_more && p_more && params.size > 7 && has_more.call(2) && has_more.call(3) && has_more.call(4) && has_more.call(5) && has_more.call(6)
+      n += 6
+      {get_param.call(3), get_param.call(4), get_param.call(5), get_param.call(6)}
+    elsif s_more && p_more && params.size > 6 && has_more.call(2) && has_more.call(3) && has_more.call(4) && has_more.call(5)
+      n += 5
+      {get_param.call(3), get_param.call(4), get_param.call(5), get_param.call(6)}
+    elsif s_more && p_more && params.size > 5 && has_more.call(2) && has_more.call(3) && has_more.call(4) && !has_more.call(5)
+      n += 4
+      {get_param.call(3), get_param.call(4), get_param.call(5), -1}
+    elsif s_more && p_more && p == 2 && has_more.call(2) && has_more.call(3) && !has_more.call(4)
+      n += 3
+      {get_param.call(2), get_param.call(3), get_param.call(4), -1}
+    elsif !s_more && !p_more && p == 2 && !has_more.call(2) && !has_more.call(3) && !has_more.call(4)
+      n += 3
+      {get_param.call(2), get_param.call(3), get_param.call(4), -1}
+    else
+      {-1, -1, -1, -1}
+    end
+  }
+
+  case color_type
+  when 0 # implementation defined
+    return {2, nil}
+  when 1 # transparent
+    return {2, Color.new(0_u8, 0_u8, 0_u8, 0_u8)}
+  when 2 # RGB direct color
+    return {0, nil} if params.size < 5
+    r, g, b, _a = paramsfn.call
+    return {0, nil} if r < 0 || g < 0 || b < 0
+    return {n, Color.new(r.to_u8, g.to_u8, b.to_u8, 0xff_u8)}
+  when 3 # CMY direct color
+    return {0, nil} if params.size < 5
+    c, m, y, _k = paramsfn.call
+    return {0, nil} if c < 0 || m < 0 || y < 0
+    r, g, b = cmyk_to_rgb(c, m, y, 0)
+    return {n, Color.new(r, g, b, 0xff_u8)}
+  when 4 # CMYK direct color
+    return {0, nil} if params.size < 6
+    c, m, y, k = paramsfn.call
+    return {0, nil} if c < 0 || m < 0 || y < 0 || k < 0
+    r, g, b = cmyk_to_rgb(c, m, y, k)
+    return {n, Color.new(r, g, b, 0xff_u8)}
+  when 5 # indexed color
+    return {0, nil} if params.size < 3
+    if (s_more && p_more && !has_more.call(2)) || (!s_more && !p_more && !has_more.call(2))
+      return {3, ExtendedColor.new(get_param.call(2).to_u8)}
+    end
+    return {0, nil}
+  when 6 # RGBA direct color
+    return {0, nil} if params.size < 6
+    r, g, b, a = paramsfn.call
+    return {0, nil} if r < 0 || g < 0 || b < 0 || a < 0
+    return {n, Color.new(r.to_u8, g.to_u8, b.to_u8, a.to_u8)}
+  else
+    return {0, nil}
+  end
 end
