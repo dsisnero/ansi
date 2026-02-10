@@ -1,6 +1,9 @@
 # ansi
 
-TODO: Write a description here
+`ansi` is a Crystal library for generating and parsing ANSI terminal escape
+sequences. It is a Crystal port of `x/ansi` (Go) and includes helpers for
+colors, styles, cursor control, modes, mouse/keyboard protocols, images
+(Kitty, iTerm2, Sixel), and sequence parsing/decoding utilities.
 
 ## Installation
 
@@ -20,11 +23,30 @@ TODO: Write a description here
 require "ansi"
 ```
 
-TODO: Write usage instructions here
+Examples:
+
+```crystal
+# Colors and styles
+puts Ansi.sgr(Ansi::AttrBold, Ansi::AttrBlueForegroundColor) + "Hello" + Ansi::ResetStyle
+
+# Cursor movement
+print Ansi.cursor_up(2)
+print Ansi.cursor_forward(10)
+
+# Clipboard
+print Ansi.set_system_clipboard("hello")
+
+# Kitty graphics
+payload = "...".to_slice
+print Ansi.kitty_graphics(payload)
+```
 
 ## Development
+Run specs:
 
-TODO: Write development instructions here
+```bash
+crystal spec
+```
 
 ## Contributing
 
