@@ -124,18 +124,3 @@ describe Ansi::RGBAImage do
     end
   end
 end
-
-# Pending tests for missing image functionality
-describe "Missing image functionality (from Go)" do
-  pending "supports different image formats" do
-    # Go might have other image types beyond RGBA
-  end
-
-  pending "implements image encoding/decoding helpers" do
-    # Graphics encoding helpers
-  end
-
-  pending "handles image scaling and transformations" do
-    # If Go has image manipulation functions
-  end
-end

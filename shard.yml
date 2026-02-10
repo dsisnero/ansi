@@ -11,6 +11,9 @@ license: MIT
 dependencies:
   colorful:
     github: dsisnero/colorful
+
+  uniwidth:
+    github: naqvis/uni_char_width
   stumpy_png:
     github: stumpycr/stumpy_png
     version: "~> 5.0"

@@ -137,27 +137,23 @@ describe "Color conversions (from Go tests)" do
 
   # TestHexTo256
   it "converts hex colors to 256-color palette" do
-    # Cases from Go test (using colorful.Color):
-    # white: {R: 1, G: 1, B: 1} -> 231
-    # offwhite: {R: 0.9333, G: 0.9333, B: 0.933} -> 255
-    # red: {R: 1, G: 0, B: 0} -> 196
-    # gray: {R: 0.5, G: 0.5, B: 0.5} -> 244
+    cases = {
+      "white"                             => {Colorful::Color.new(r: 1.0, g: 1.0, b: 1.0), "#ffffff", Ansi::IndexedColor.new(231_u8)},
+      "offwhite"                          => {Colorful::Color.new(r: 0.9333, g: 0.9333, b: 0.933), "#eeeeee", Ansi::IndexedColor.new(255_u8)},
+      "slightly brighter than offwhite"   => {Colorful::Color.new(r: 0.95, g: 0.95, b: 0.95), "#f2f2f2", Ansi::IndexedColor.new(255_u8)},
+      "red"                               => {Colorful::Color.new(r: 1.0, g: 0.0, b: 0.0), "#ff0000", Ansi::IndexedColor.new(196_u8)},
+      "silver foil"                       => {Colorful::Color.new(r: 0.6863, g: 0.6863, b: 0.6863), "#afafaf", Ansi::IndexedColor.new(145_u8)},
+      "silver chalice"                    => {Colorful::Color.new(r: 0.698, g: 0.698, b: 0.698), "#b2b2b2", Ansi::IndexedColor.new(249_u8)},
+      "slightly closer to silver foil"    => {Colorful::Color.new(r: 0.692, g: 0.692, b: 0.692), "#b0b0b0", Ansi::IndexedColor.new(145_u8)},
+      "slightly closer to silver chalice" => {Colorful::Color.new(r: 0.694, g: 0.694, b: 0.694), "#b1b1b1", Ansi::IndexedColor.new(249_u8)},
+      "gray"                              => {Colorful::Color.new(r: 0.5, g: 0.5, b: 0.5), "#808080", Ansi::IndexedColor.new(244_u8)},
+    }
 
-    white = Colorful::Color.new(r: 1.0, g: 1.0, b: 1.0)
-    result = Ansi.convert_256(white)
-    result.value.should eq 231_u8
-
-    offwhite = Colorful::Color.new(r: 0.9333, g: 0.9333, b: 0.933)
-    result = Ansi.convert_256(offwhite)
-    result.value.should eq 255_u8
-
-    red = Colorful::Color.new(r: 1.0, g: 0.0, b: 0.0)
-    result = Ansi.convert_256(red)
-    result.value.should eq 196_u8
-
-    gray = Colorful::Color.new(r: 0.5, g: 0.5, b: 0.5)
-    result = Ansi.convert_256(gray)
-    result.value.should eq 244_u8
+    cases.each do |_, (input, expected_hex, expected_output)|
+      input.hex.should eq expected_hex
+      output = Ansi.convert_256(input)
+      output.should eq expected_output
+    end
   end
 end
 

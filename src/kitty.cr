@@ -163,6 +163,91 @@ module Ansi
       def to_s : String
         options.join(",")
       end
+
+      def marshal_text : Bytes
+        to_s.to_slice
+      end
+
+      def unmarshal_text(text : Bytes) : Nil
+        unmarshal_text(String.new(text))
+      end
+
+      # ameba:disable Metrics/CyclomaticComplexity
+      def unmarshal_text(text : String) : Nil
+        text.split(",").each do |opt|
+          parts = opt.split("=", 2)
+          next unless parts.size == 2
+          key = parts[0]
+          value = parts[1]
+          next if value.empty?
+
+          case key
+          when "a"
+            @action = value[0]
+          when "o"
+            @compression = value[0]
+          when "t"
+            @transmission = value[0]
+          when "d"
+            d = value[0]
+            if d >= 'A' && d <= 'Z'
+              @delete_resources = true
+              d = (d.ord + 32).chr
+            end
+            @delete = d
+          when "i", "q", "p", "I", "f", "s", "v", "S", "O", "m", "x", "y", "z", "w", "h", "X", "Y", "c", "r", "U", "P", "Q"
+            v = value.to_i?
+            next unless v
+
+            case key
+            when "i"
+              @id = v
+            when "q"
+              @quite = v.to_u8
+            when "p"
+              @placement_id = v
+            when "I"
+              @number = v
+            when "f"
+              @format = v
+            when "s"
+              @image_width = v
+            when "v"
+              @image_height = v
+            when "S"
+              @size = v
+            when "O"
+              @offset = v
+            when "m"
+              @chunk = (v == 0 || v == 1)
+            when "x"
+              @x = v
+            when "y"
+              @y = v
+            when "z"
+              @z = v
+            when "w"
+              @width = v
+            when "h"
+              @height = v
+            when "X"
+              @offset_x = v
+            when "Y"
+              @offset_y = v
+            when "c"
+              @columns = v
+            when "r"
+              @rows = v
+            when "U"
+              @virtual_placement = (v == 1)
+            when "P"
+              @parent_id = v
+            when "Q"
+              @parent_placement_id = v
+            end
+          end
+        end
+      end
     end
 
     class Encoder

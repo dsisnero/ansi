@@ -4,6 +4,19 @@ require "./image"
 require "./iterm2"
 require "./kitty"
 require "./sixel"
+require "./mode"
+require "./modes"
+require "./mouse"
+require "./urxvt"
+require "./parser_transition"
+require "./parser_handler"
+require "./parser"
+require "./parser_decode"
+require "./parser_sync"
+require "./method"
+require "./width"
+require "./wrap"
+require "./truncate"
 require "./c0"
 require "./ascii"
 require "./c1"
@@ -13,6 +26,7 @@ require "./cursor"
 require "base64"
 require "uri"
 require "path"
+require "colorful"
 
 module Ansi
   def self.iterm2(data : String) : String
@@ -58,9 +72,19 @@ module Ansi
   # terminal emulators.
   #
   # See https://man7.org/linux/man-pages/man4/console_codes.4.html
-  def self.set_palette(index : Int32, color : Ansi::Color?) : String
+  def self.set_palette(index : Int32, color : Ansi::Color? | Colorful::Color? = nil) : String
     return "" if color.nil? || index < 0 || index > 15
-    sprintf("\e]P%x%02x%02x%02x\a", index, color.r, color.g, color.b)
+    case color
+    when Ansi::Color
+      r = color.r
+      g = color.g
+      b = color.b
+    when Colorful::Color
+      r, g, b = color.rgb255
+    else
+      return ""
+    end
+    sprintf("\e]P%x%02x%02x%02x\a", index, r, g, b)
   end
 
   # ResetPalette resets the color palette to the default values.

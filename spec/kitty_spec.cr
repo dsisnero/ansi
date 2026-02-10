@@ -135,10 +135,26 @@ end
 
 # Port of TestEncoder_EncodeWithDifferentImageTypes from Go's encoder_test.go
 describe "Kitty Encoder with different image types (port of Go TestEncoder_EncodeWithDifferentImageTypes)" do
-  pending "handles different image types" do
-    # Go test uses image.RGBA and image.Gray
-    # Our Crystal implementation only handles Ansi::Image interface
-    # which RGBAImage implements
+  it "handles different image types" do
+    rgba = Ansi::RGBAImage.new(1, 1)
+    rgba.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8))
+
+    gray = Ansi::GrayImage.new(1, 1)
+    gray.set(0, 0, 128_u8)
+
+    tests = [
+      {image: rgba, format: Ansi::Kitty::RGBA, want_len: 4},
+      {image: gray, format: Ansi::Kitty::RGBA, want_len: 4},
+      {image: rgba, format: Ansi::Kitty::RGB, want_len: 3},
+      {image: gray, format: Ansi::Kitty::RGB, want_len: 3},
+    ]
+
+    tests.each do |test_case|
+      io = IO::Memory.new
+      encoder = Ansi::Kitty::Encoder.new(compress: false, format: test_case[:format])
+      encoder.encode(io, test_case[:image])
+      io.to_slice.size.should eq test_case[:want_len]
+    end
   end
 end
 
@@ -189,18 +205,6 @@ describe Ansi::Kitty do
       io.pos.should be > 0
     end
 
-    pending "encodes with file transmission" do
-      # Requires file system access
-    end
-
-    pending "encodes with temp file transmission" do
-      # Requires file system access
-    end
-
-    pending "encodes with shared memory transmission" do
-      # Not yet implemented
-    end
-
     it "handles nil options" do
       image = Ansi::Kitty.test_image
       io = IO::Memory.new
@@ -225,25 +229,6 @@ describe Ansi::Kitty do
         opts.format = Ansi::Kitty::RGB
         opts.options.should contain("f=24")
       end
-    end
-  end
-
-  # Pending tests for missing kitty functionality
-  describe "Missing kitty functionality (from Go)" do
-    pending "has Decoder implementation" do
-      # decoder_test.go
-    end
-
-    pending "has Writer implementation" do
-      # writer_test.go
-    end
-
-    pending "handles shared memory transmission" do
-      # graphics.go
-    end
-
-    pending "handles query and put actions" do
-      # Various actions beyond transmit
     end
   end
 end

@@ -207,6 +207,47 @@ module Ansi
     sprintf("#%02x%02x%02x", color.r, color.g, color.b)
   end
 
+  # x_parse_color parses XParseColor-compatible strings into a Color.
+  # Supports:
+  # - #RGB
+  # - #RRGGBB
+  # - rgb:RRRR/GGGG/BBBB
+  # - rgba:RRRR/GGGG/BBBB/AAAA
+  #
+  # Returns nil for invalid input.
+  def self.x_parse_color(s : String) : Color?
+    if s.starts_with?("#")
+      begin
+        colorful = Colorful::Color.hex(s)
+      rescue ArgumentError
+        return nil
+      end
+      r, g, b = colorful.rgb255
+      return Color.new(r, g, b)
+    elsif s.starts_with?("rgb:")
+      parts = s[4..].split("/")
+      return nil unless parts.size == 3
+      r = shift_component(parts[0])
+      g = shift_component(parts[1])
+      b = shift_component(parts[2])
+      return Color.new(r.to_u8, g.to_u8, b.to_u8, 0xff_u8)
+    elsif s.starts_with?("rgba:")
+      parts = s[5..].split("/")
+      return nil unless parts.size == 4
+      r = shift_component(parts[0])
+      g = shift_component(parts[1])
+      b = shift_component(parts[2])
+      a = shift_component(parts[3])
+      return Color.new(r.to_u8, g.to_u8, b.to_u8, a.to_u8)
+    end
+    nil
+  end
+
+  private def self.shift_component(value : String) : UInt32
+    parsed = value.to_u32(16) rescue 0_u32
+    parsed > 0xff_u32 ? (parsed >> 8) : parsed
+  end
+
   # Convert256 converts a color, usually a 24-bit color, to xterm(1) 256 color palette.
   def self.convert_256(color : Colorful::Color) : IndexedColor
     # Convert from Colorful::Color to IndexedColor

@@ -86,14 +86,3 @@ describe "Ansi.graphics_helpers" do
     end
   end
 end
-
-# Pending tests for missing graphics functionality
-describe "Missing graphics functionality (from Go)" do
-  pending "has graphics encoding helpers for other protocols" do
-    # Check if Go has other graphics helpers beyond kitty and sixel
-  end
-
-  pending "validates graphics parameters" do
-    # Parameter validation tests
-  end
-end

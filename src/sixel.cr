@@ -869,6 +869,7 @@ module Ansi
         {max_width, band_count * 6}
       end
 
+      # ameba:disable Metrics/CyclomaticComplexity
       def decode(io : IO) : Ansi::RGBAImage
         # Read all data from IO
         data = io.gets_to_end.to_slice
