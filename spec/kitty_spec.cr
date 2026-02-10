@@ -14,14 +14,26 @@ module Ansi::Kitty
 
   # PNG header constant from Go test
   PNG_HEADER = "\x89PNG\r\n\x1a\n"
+
+  # Helper to compare two images for equality
+  def self.images_equal?(a : Ansi::Image, b : Ansi::Image) : Bool
+    return false if a.width != b.width || a.height != b.height
+    a.each_pixel do |x, y, color_a|
+      color_b = b.pixel(x, y)
+      return false if color_a.r != color_b.r || color_a.g != color_b.g || color_a.b != color_b.b || color_a.a != color_b.a
+    end
+    true
+  end
 end
 
 # Port of TestEncoder_Encode from Go's encoder_test.go
 describe "Kitty Encoder (port of Go TestEncoder_Encode)" do
   describe "#encode" do
-    pending "handles nil image (Crystal encoder doesn't accept nil)" do
-      # Go test: nil image produces empty output
-      # Our Crystal encoder doesn't accept nil image parameter
+    it "handles nil image (produces empty output)" do
+      encoder = Ansi::Kitty::Encoder.new(compress: false, format: Ansi::Kitty::RGBA)
+      io = IO::Memory.new
+      encoder.encode(io, nil)
+      io.to_slice.size.should eq 0
     end
 
     it "encodes RGBA format" do
@@ -56,8 +68,16 @@ describe "Kitty Encoder (port of Go TestEncoder_Encode)" do
       io.to_slice.should eq expected
     end
 
-    pending "encodes PNG format" do
-      # PNG encoding not yet implemented in Crystal
+    it "encodes PNG format" do
+      encoder = Ansi::Kitty::Encoder.new(compress: false, format: Ansi::Kitty::PNG)
+      image = Ansi::Kitty.test_image
+      io = IO::Memory.new
+
+      encoder.encode(io, image)
+
+      # Verify PNG header (first 8 bytes)
+      png_header = io.to_slice[0, 8]
+      png_header.should eq Ansi::Kitty::PNG_HEADER.to_slice
     end
 
     it "raises on invalid format" do

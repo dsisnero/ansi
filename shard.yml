@@ -11,6 +11,9 @@ license: MIT
 dependencies:
   colorful:
     github: dsisnero/colorful
+  stumpy_png:
+    github: stumpycr/stumpy_png
+    version: "~> 5.0"
 
 development_dependencies:
   ameba:

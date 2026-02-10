@@ -1,5 +1,6 @@
 require "base64"
 require "compress/zlib"
+require "stumpy_png"
 
 module Ansi
   module Kitty
@@ -171,13 +172,15 @@ module Ansi
       def initialize(@compress : Bool = false, @format : Int32 = 0)
       end
 
-      def encode(io : IO, image : Ansi::Image) : Nil
-        if @compress
-          Compress::Zlib::Writer.open(io) do |writer|
-            encode_inner(writer, image)
+      def encode(io : IO, image : Ansi::Image?) : Nil
+        if image
+          if @compress
+            Compress::Zlib::Writer.open(io) do |writer|
+              encode_inner(writer, image)
+            end
+          else
+            encode_inner(io, image)
           end
-        else
-          encode_inner(io, image)
         end
       end
 
@@ -193,10 +196,79 @@ module Ansi
             io.write_byte(color.a) if @format == RGBA
           end
         when PNG
-          raise "PNG encoding not yet implemented"
+          canvas = StumpyPNG::Canvas.new(image.width, image.height)
+          image.each_pixel do |x, y, color|
+            canvas[x, y] = StumpyPNG::RGBA.new(color.r, color.g, color.b, color.a)
+          end
+          StumpyPNG.write(canvas, io)
         else
           raise "unsupported format: #{@format}"
         end
+      end
+    end
+
+    class Decoder
+      property? decompress : Bool
+      property format : Int32
+      property width : Int32
+      property height : Int32
+
+      def initialize(@decompress : Bool = false, @format : Int32 = 0, @width : Int32 = 0, @height : Int32 = 0)
+      end
+
+      def decode(io : IO) : Ansi::Image
+        if @decompress
+          Compress::Zlib::Reader.open(io) do |reader|
+            decode_inner(reader)
+          end
+        else
+          decode_inner(io)
+        end
+      end
+
+      private def decode_inner(io : IO) : Ansi::Image
+        @format = RGBA if @format == 0
+
+        case @format
+        when RGBA, RGB
+          decode_rgba(io, @format == RGBA)
+        when PNG
+          decode_png(io)
+        else
+          raise "unsupported format: #{@format}"
+        end
+      end
+
+      private def decode_rgba(io : IO, alpha : Bool) : Ansi::Image
+        raise "width and height must be specified for RGBA/RGB decoding" if @width <= 0 || @height <= 0
+        image = Ansi::RGBAImage.new(@width, @height)
+        pixel_size = alpha ? 4 : 3
+        buffer = Bytes.new(pixel_size)
+
+        @height.times do |y|
+          @width.times do |x|
+            bytes_read = io.read_fully(buffer)
+            raise "failed to read pixel data" if bytes_read != pixel_size
+            if alpha
+              image.set(x, y, Ansi::Color.new(buffer[0], buffer[1], buffer[2], buffer[3]))
+            else
+              image.set(x, y, Ansi::Color.new(buffer[0], buffer[1], buffer[2], 0xff_u8))
+            end
+          end
+        end
+        image
+      end
+
+      private def decode_png(io : IO) : Ansi::Image
+        canvas = StumpyPNG.read(io)
+        image = Ansi::RGBAImage.new(canvas.width, canvas.height)
+        canvas.width.times do |x|
+          canvas.height.times do |y|
+            color = canvas[x, y]
+            image.set(x, y, Ansi::Color.new(color.r.to_u8, color.g.to_u8, color.b.to_u8, color.a.to_u8))
+          end
+        end
+        image
       end
     end
 
