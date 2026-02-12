@@ -845,6 +845,7 @@ module Ansi
       end
 
       private def resolve_bounds(data : Bytes, idx : Int32, bounds : Tuple(Int32, Int32, Int32, Int32)?) : Tuple(Int32, Int32, Int32, Int32)
+        # ameba:disable Lint/NotNil
         return bounds.not_nil! if bounds && bounds[2] > 0 && bounds[3] > 0
 
         width, height = scan_size(data[idx..])

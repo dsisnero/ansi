@@ -173,4 +173,60 @@ describe "Ansi::Kitty::Decoder" do
       images_equal?(result, test_case[:expected]).should be_true
     end
   end
+
+  it "decodes edge cases" do
+    tests = [
+      {
+        name:    "zero dimensions",
+        decoder: begin
+          d = Ansi::Kitty::Decoder.new
+          d.format = Ansi::Kitty::RGBA
+          d.width = 0
+          d.height = 0
+          d
+        end,
+        input:    Bytes[],
+        expected: Ansi::RGBAImage.new(0, 0),
+        raises:   true,
+      },
+      {
+        name:    "negative width",
+        decoder: begin
+          d = Ansi::Kitty::Decoder.new
+          d.format = Ansi::Kitty::RGBA
+          d.width = -1
+          d.height = 1
+          d
+        end,
+        input:    Bytes[255, 0, 0, 255],
+        expected: Ansi::RGBAImage.new(0, 0),
+        raises:   true,
+      },
+      {
+        name:    "very large dimensions",
+        decoder: begin
+          d = Ansi::Kitty::Decoder.new
+          d.format = Ansi::Kitty::RGBA
+          d.width = 1
+          d.height = 1000000
+          d
+        end,
+        input:    Bytes[255, 0, 0, 255],
+        expected: Ansi::RGBAImage.new(0, 0),
+        raises:   true,
+      },
+    ]
+
+    tests.each do |test_case|
+      if test_case[:raises]
+        expect_raises(Exception) do
+          test_case[:decoder].decode(IO::Memory.new(test_case[:input]))
+        end
+        next
+      end
+
+      result = test_case[:decoder].decode(IO::Memory.new(test_case[:input]))
+      images_equal?(result, test_case[:expected]).should be_true
+    end
+  end
 end

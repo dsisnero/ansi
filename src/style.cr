@@ -613,10 +613,11 @@ end
 #
 # The parameters can be separated by semicolons (;) or colons (:). Mixing
 # separators is not allowed.
+# ameba:disable Metrics/CyclomaticComplexity
 def self.read_style_color(params : Params) : {Int32, PaletteColor?}
   return {0, nil} if params.size < 2
 
-  s, s_more, s_ok = params.param(0, 0)
+  _s, s_more, s_ok = params.param(0, 0)
   p, p_more, p_ok = params.param(1, 0)
   return {0, nil} unless s_ok && p_ok
 
@@ -626,6 +627,7 @@ def self.read_style_color(params : Params) : {Int32, PaletteColor?}
   get_param = ->(idx : Int32) { params.param(idx, 0)[0] }
   has_more = ->(idx : Int32) { params.param(idx, 0)[1] }
 
+  # ameba:disable Metrics/CyclomaticComplexity
   paramsfn = -> {
     if s_more && p_more && params.size > 8 && has_more.call(2) && has_more.call(3) && has_more.call(4) && has_more.call(5) && has_more.call(6) && has_more.call(7)
       n += 7

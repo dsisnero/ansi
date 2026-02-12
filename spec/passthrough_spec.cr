@@ -33,17 +33,17 @@ describe Ansi do
   ]
 
   describe ".screen_passthrough" do
-    passthrough_cases.each_with_index do |tt, i|
-      it tt[:name] do
-        Ansi.screen_passthrough(tt[:seq], tt[:limit]).should eq(tt[:screen]), "case: #{i + 1}"
+    passthrough_cases.each_with_index do |test_case, index|
+      it test_case[:name] do
+        Ansi.screen_passthrough(test_case[:seq], test_case[:limit]).should eq(test_case[:screen]), "case: #{index + 1}"
       end
     end
   end
 
   describe ".tmux_passthrough" do
-    passthrough_cases.each_with_index do |tt, i|
-      it tt[:name] do
-        Ansi.tmux_passthrough(tt[:seq]).should eq(tt[:tmux]), "case: #{i + 1}"
+    passthrough_cases.each_with_index do |test_case, index|
+      it test_case[:name] do
+        Ansi.tmux_passthrough(test_case[:seq]).should eq(test_case[:tmux]), "case: #{index + 1}"
       end
     end
   end
