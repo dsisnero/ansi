@@ -79,6 +79,19 @@ module Ansi
       0
     end
 
+    # FromColor returns a Sixel color from a color. It converts the color
+    # channels to the 0-100 range.
+    def self.from_color(color : Ansi::Color) : Color
+      r16, g16, b16, _ = color.rgba
+      Color.new(
+        pc: 0,
+        pu: 2,
+        px: convert_channel(r16).to_i32,
+        py: convert_channel(g16).to_i32,
+        pz: convert_channel(b16).to_i32
+      )
+    end
+
     # ameba:disable Metrics/CyclomaticComplexity
     def self.decode_color(data : Bytes) : {Color, Int32}
       n = 0
@@ -552,11 +565,9 @@ module Ansi
         when 2
           color = Sixel.sixel_rgb(@px, @py, @pz)
         else
-          # Default color map - for now just handle black for pc=0
-          if @pc == 0
-            return {0x0000_u32, 0x0000_u32, 0x0000_u32, 0xFFFF_u32}
+          if @pc >= 0 && @pc < DEFAULT_PALETTE.size
+            return DEFAULT_PALETTE[@pc].rgba
           else
-            # Fallback to black
             return {0x0000_u32, 0x0000_u32, 0x0000_u32, 0xFFFF_u32}
           end
         end
