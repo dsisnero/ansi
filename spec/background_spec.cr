@@ -27,11 +27,26 @@ describe "Ansi background color functions" do
     it "returns sequence with color string" do
       Ansi.set_background_color("#ff0000").should eq "\e]11;#ff0000\a"
     end
+
+    it "maps color255 (ExtendedColor) to #eeeeee" do
+      color = Ansi::IndexedColor.new(255_u8)
+      rgb = Ansi.ansi_to_rgb(color.value)
+      hex = Ansi.color_to_hex_string(rgb)
+      hex.should eq "#eeeeee"
+    end
+
+    it "uses color255 for background" do
+      Ansi.set_background_color("#eeeeee").should eq "\e]11;#eeeeee\a"
+    end
   end
 
   describe ".set_cursor_color" do
     it "returns sequence with color string" do
       Ansi.set_cursor_color("#00ff00").should eq "\e]12;#00ff00\a"
+    end
+
+    it "uses hex color #ffeeaa for cursor" do
+      Ansi.set_cursor_color("#ffeeaa").should eq "\e]12;#ffeeaa\a"
     end
   end
 
@@ -91,6 +106,15 @@ describe "Ansi background color functions" do
       g2.should eq 0_u32
       b2.should eq 0_u32
       a2.should eq 0_u32
+    end
+  end
+
+  describe "BasicColor constants (from Go)" do
+    it "maps BrightMagenta to #ff00ff" do
+      color = Ansi::BasicColor::BrightMagenta
+      rgb = Ansi.ansi_to_rgb(color.value)
+      hex = Ansi.color_to_hex_string(rgb)
+      hex.should eq "#ff00ff"
     end
   end
 end

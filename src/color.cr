@@ -270,6 +270,53 @@ module Ansi
     parsed > 0xff_u32 ? (parsed >> 8) : parsed
   end
 
+  # Convert256 overloads for various color types
+  def self.convert_256(color : IndexedColor) : IndexedColor
+    color
+  end
+
+  def self.convert_256(color : BasicColor) : IndexedColor
+    rgb = ansi_to_rgb(color.value)
+    convert_256(Colorful::Color.new(r: rgb.r.to_f64 / 255.0, g: rgb.g.to_f64 / 255.0, b: rgb.b.to_f64 / 255.0))
+  end
+
+  def self.convert_256(color : TrueColor) : IndexedColor
+    r, g, b = hex_to_rgb(color.value)
+    convert_256(Colorful::Color.new(r: r.to_f64 / 255.0, g: g.to_f64 / 255.0, b: b.to_f64 / 255.0))
+  end
+
+  def self.convert_256(color : Color) : IndexedColor
+    convert_256(Colorful::Color.new(r: color.r.to_f64 / 255.0, g: color.g.to_f64 / 255.0, b: color.b.to_f64 / 255.0))
+  end
+
+  def self.convert_256(color : RGBColor) : IndexedColor
+    convert_256(Colorful::Color.new(r: color.r.to_f64 / 255.0, g: color.g.to_f64 / 255.0, b: color.b.to_f64 / 255.0))
+  end
+
+  def self.convert_256(color : HexColor) : IndexedColor
+    if c = color.color
+      convert_256(Colorful::Color.new(r: c.r.to_f64 / 255.0, g: c.g.to_f64 / 255.0, b: c.b.to_f64 / 255.0))
+    else
+      IndexedColor.new(0_u8)
+    end
+  end
+
+  def self.convert_256(color : XRGBColor) : IndexedColor
+    if c = color.color
+      convert_256(Colorful::Color.new(r: c.r.to_f64 / 255.0, g: c.g.to_f64 / 255.0, b: c.b.to_f64 / 255.0))
+    else
+      IndexedColor.new(0_u8)
+    end
+  end
+
+  def self.convert_256(color : XRGBAColor) : IndexedColor
+    if c = color.color
+      convert_256(Colorful::Color.new(r: c.r.to_f64 / 255.0, g: c.g.to_f64 / 255.0, b: c.b.to_f64 / 255.0))
+    else
+      IndexedColor.new(0_u8)
+    end
+  end
+
   # Convert256 converts a color, usually a 24-bit color, to xterm(1) 256 color palette.
   def self.convert_256(color : Colorful::Color) : IndexedColor
     # Convert from Colorful::Color to IndexedColor
