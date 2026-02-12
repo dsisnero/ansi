@@ -420,4 +420,87 @@ describe "Ansi.decode_sequence" do
       end
     end
   end
+
+  describe "Ansi.command" do
+    it "computes command integers" do
+      cases = [
+        {
+          name:     "CUU", # Cursor Up
+          cmd:      'A'.ord.to_u8,
+          prefix:   0_u8,
+          inter:    0_u8,
+          expected: 'A'.ord,
+        },
+        {
+          name:     "DECAWM", # Auto Wrap Mode
+          cmd:      'h'.ord.to_u8,
+          prefix:   '?'.ord.to_u8,
+          inter:    0_u8,
+          expected: 'h'.ord | ('?'.ord << Ansi::ParserTransition::PrefixShift),
+        },
+        {
+          name:     "DECSCUSR", # Set Cursor Style
+          cmd:      'q'.ord.to_u8,
+          prefix:   0_u8,
+          inter:    ' '.ord.to_u8,
+          expected: 'q'.ord | (' '.ord << Ansi::ParserTransition::IntermedShift),
+        },
+        {
+          name:     "imaginary cmd with both prefix and intermed",
+          cmd:      'x'.ord.to_u8,
+          prefix:   '>'.ord.to_u8,
+          inter:    '('.ord.to_u8,
+          expected: 'x'.ord | ('>'.ord << Ansi::ParserTransition::PrefixShift) | ('('.ord << Ansi::ParserTransition::IntermedShift),
+        },
+        {
+          name:     "OSC11", # Set background color
+          cmd:      11_u8,
+          prefix:   0_u8,
+          inter:    0_u8,
+          expected: 11,
+        },
+      ]
+
+      cases.each do |test_case|
+        result = Ansi.command(test_case[:prefix], test_case[:inter], test_case[:cmd])
+        result.should eq(test_case[:expected])
+      end
+    end
+  end
+
+  describe "Ansi.parameter" do
+    it "computes parameter integers" do
+      cases = [
+        {
+          name:     "single param",
+          param:    1,
+          has_more: false,
+          expected: 1,
+        },
+        {
+          name:     "single param with hasMore",
+          param:    1,
+          has_more: true,
+          expected: 1 | Ansi::ParserTransition::HasMoreFlag,
+        },
+        {
+          name:     "negative param",
+          param:    -1,
+          has_more: false,
+          expected: Ansi::ParserTransition::ParamMask,
+        },
+        {
+          name:     "negative param has more",
+          param:    -1,
+          has_more: true,
+          expected: -1,
+        },
+      ]
+
+      cases.each do |test_case|
+        result = Ansi.parameter(test_case[:param], test_case[:has_more])
+        result.should eq(test_case[:expected])
+      end
+    end
+  end
 end
