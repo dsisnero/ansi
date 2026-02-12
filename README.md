@@ -42,6 +42,7 @@ print Ansi.kitty_graphics(payload)
 ```
 
 ## Development
+
 Run specs:
 
 ```bash

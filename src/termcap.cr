@@ -12,7 +12,7 @@ module Ansi
     return "" if caps.empty?
 
     encoded = caps.map do |cap|
-      cap.bytes.map { |byte| byte.to_s(16).rjust(2, '0') }.join.upcase
+      cap.bytes.map(&.to_s(16).rjust(2, '0')).join.upcase
     end
 
     "\eP+q#{encoded.join(";")}\e\\"
