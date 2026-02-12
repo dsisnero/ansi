@@ -1122,10 +1122,10 @@ module Ansi
 
       private def end_repeat : Nil
         return if @repeat_count == 0
-        if @repeat_count == 1
-          @image_data << @repeat_byte
+        if @repeat_count > 3
+          Sixel.write_repeat(@image_data, @repeat_count, @repeat_byte)
         else
-          @image_data << RepeatIntroducer.chr << @repeat_count << @repeat_byte
+          @repeat_count.times { @image_data << @repeat_byte }
         end
         @repeat_count = 0
         @repeat_byte = '\0'
