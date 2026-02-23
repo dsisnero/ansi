@@ -90,7 +90,7 @@ describe "Constant array validation" do
         end
       end
 
-      if mismatches.any?
+      if !mismatches.empty?
         fail "ANSI_HEX mismatches at indices: #{mismatches.first(10).join(", ")}" +
              " (total #{mismatches.size})"
       end
@@ -116,7 +116,7 @@ describe "Constant array validation" do
         end
       end
 
-      if mismatches.any?
+      if !mismatches.empty?
         fail "ANSI256_TO_16 mismatches at indices: #{mismatches.first(10).join(", ")}" +
              " (total #{mismatches.size})"
       end

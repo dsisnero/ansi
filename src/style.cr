@@ -682,9 +682,3 @@ module Ansi
     AttrBrightWhiteBackgroundColor   => "107",
   }
 end
-    AttrBrightCyanBackgroundColor    => "106",
-    AttrBrightWhiteBackgroundColor   => "107",
-  }
-end
-
-
