@@ -47,6 +47,11 @@ module Ansi
         opts << "doNotMoveCursor=1" if @do_not_move_cursor
         opts.join(";")
       end
+
+      # String representation matching Go's file.String()
+      def to_s : String
+        options_string
+      end
     end
 
     struct File
@@ -137,10 +142,7 @@ module Ansi
       end
 
       def to_s : String
-        String.build do |io|
-          io << "FilePart="
-          io.write(@content)
-        end
+        "FilePart=" + String.new(@content)
       end
     end
 
