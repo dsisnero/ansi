@@ -224,6 +224,25 @@ module Ansi
     {r, g, b}
   end
 
+  # cmyk_to_rgb converts CMYK color components (0-255) to RGB components (0-255).
+  # Implements the same conversion as Go's image/color.CMYKToRGB.
+  def self.cmyk_to_rgb(c : UInt8, m : UInt8, y : UInt8, k : UInt8) : {UInt8, UInt8, UInt8}
+    # Convert to 32-bit like Go does
+    c32 = c.to_u32
+    m32 = m.to_u32
+    y32 = y.to_u32
+    k32 = k.to_u32
+
+    # Compute using 64-bit to avoid overflow checking
+    w = 0xffff_u64 - k32.to_u64 * 0x101_u64
+    r64 = (0xffff_u64 - c32.to_u64 * 0x101_u64) * w // 0xffff_u64
+    g64 = (0xffff_u64 - m32.to_u64 * 0x101_u64) * w // 0xffff_u64
+    b64 = (0xffff_u64 - y32.to_u64 * 0x101_u64) * w // 0xffff_u64
+
+    # Shift right 8 bits to get 8-bit value (as Go does with r >> 8)
+    {(r64 >> 8).to_u8, (g64 >> 8).to_u8, (b64 >> 8).to_u8}
+  end
+
   # color_to_hex_string converts a color to a hex string.
   def self.color_to_hex_string(color : Color) : String
     sprintf("#%02x%02x%02x", color.r, color.g, color.b)

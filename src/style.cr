@@ -80,13 +80,13 @@ module Ansi
       return {0, nil} if params.size < 5
       c, m, y, _k = paramsfn.call
       return {0, nil} if c < 0 || m < 0 || y < 0
-      r, g, b = cmyk_to_rgb(c, m, y, 0)
+      r, g, b = cmyk_to_rgb(c.to_u8, m.to_u8, y.to_u8, 0_u8)
       return {n, Color.new(r, g, b, 0xff_u8)}
     when 4 # CMYK direct color
       return {0, nil} if params.size < 6
       c, m, y, k = paramsfn.call
       return {0, nil} if c < 0 || m < 0 || y < 0 || k < 0
-      r, g, b = cmyk_to_rgb(c, m, y, k)
+      r, g, b = cmyk_to_rgb(c.to_u8, m.to_u8, y.to_u8, k.to_u8)
       return {n, Color.new(r, g, b, 0xff_u8)}
     when 5 # indexed color
       return {0, nil} if params.size < 3
