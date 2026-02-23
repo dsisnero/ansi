@@ -48,6 +48,10 @@ module Ansi
       def to_s : String
         String.build { |io| Sixel.write_raster(io, @pan, @pad, @ph, @pv) }
       end
+
+      def write_to(io : IO) : Int32
+        Sixel.write_raster(io, @pan, @pad, @ph, @pv)
+      end
     end
 
     def self.write_repeat(io : IO, count : Int32, char : Char) : Int32
@@ -65,6 +69,10 @@ module Ansi
 
       def to_s : String
         String.build { |io| Sixel.write_repeat(io, @count, @char) }
+      end
+
+      def write_to(io : IO) : Int32
+        Sixel.write_repeat(io, @count, @char)
       end
     end
 

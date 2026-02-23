@@ -30,6 +30,15 @@ module Ansi
     def wrap(s : String, length : Int32, breakpoints : String) : String
       Ansi.wrap(self, s, length, breakpoints)
     end
+
+    def decode_sequence(data : Bytes, state : UInt8, p : Parser? = nil) : {Bytes, Int32, Int32, UInt8}
+      Ansi.decode_sequence(self, data, state, p)
+    end
+
+    def decode_sequence_in_string(data : String, state : UInt8, p : Parser? = nil) : {String, Int32, Int32, UInt8}
+      _, width, n, new_state = Ansi.decode_sequence(self, data.to_slice, state, p)
+      {data.byte_slice(0, n), width, n, new_state}
+    end
   end
 
   WcWidth       = Method::WcWidth
