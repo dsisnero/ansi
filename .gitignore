@@ -1,10 +1,21 @@
-/docs/
+# Local agent/tool settings
+.claude/
+
+# Local Crystal cache
+/.crystal-cache/
+
+# Temporary working artifacts
+/temp/
+/tmp/
+
+# Dependency/build directories
 /lib/
 /bin/
-/temp/
 /.shards/
 *.dwarf
-/.crystal-cache/
+
+# macOS AppleDouble sidecars (exFAT/network volumes)
+._*
 
 # Libraries don't need dependency lock
 # Dependencies will be locked in applications that use them

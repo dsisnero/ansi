@@ -1,20 +1,24 @@
-.PHONY: install update format lint test
+.PHONY: install update format lint test clean sidecars
+
+sidecars:
+	@find . -name '._*' -not -path './.git/*' -delete
+	@find .git -name '._*' -delete
 
 install:
-	BEADS_DIR=$$(pwd)/.beads shards install
+	shards install
 
 update:
-	BEADS_DIR=$$(pwd)/.beads shards update
+	shards update
 
-format:
-	crystal tool format --check
+format: sidecars
+	crystal tool format --check src spec
 
-lint:
-	ameba --fix
-	ameba
+lint: sidecars
+	ameba --fix src spec
+	ameba src spec
 
-test:
+test: sidecars
 	crystal spec
 
-clean:
+clean: sidecars
 	rm -rf ./temp/*

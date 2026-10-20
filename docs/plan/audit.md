@@ -330,6 +330,21 @@
 ## progress_test.go
 (no structs or methods)
 
+## programstatus.go
+(ported from `ansi/v0.11.9`; not present in the pinned `eeb2896` checkout)
+### Structs
+- `ProgramStatus` [x]
+  - Crystal: `src/program_status.cr`
+- `ProgramState` [x]
+  - Crystal: `src/program_status.cr`
+- `ProgramStatusKind` [x]
+  - Crystal: `src/program_status.cr`
+### Methods
+- `SetProgramStatus` [x] (Crystal: `Ansi.set_program_status`, `Ansi.program_status=`)
+- `ClearProgramStatusID` [x] (Crystal: `Ansi.clear_program_status_id`)
+- `ClearProgramStatus` [x] (Crystal: `Ansi::ClearProgramStatus`)
+- `RequestProgramStatusSupport` [x] (Crystal: `Ansi::RequestProgramStatusSupport`)
+
 ## reset.go
 (no structs or methods)
 

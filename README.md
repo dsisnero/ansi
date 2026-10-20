@@ -43,11 +43,27 @@ print Ansi.kitty_graphics(payload)
 
 ## Development
 
-Run specs:
+Run the checks:
 
 ```bash
-crystal spec
+make format
+make lint
+make test
 ```
+
+See [docs/development.md](docs/development.md) for setup, the vendored upstream
+checkout, and the porting loop.
+
+## Docs
+
+- [Resuming work](docs/resuming.md)
+- [Architecture](docs/architecture.md)
+- [Development](docs/development.md)
+- [Coding Guidelines](docs/coding-guidelines.md)
+- [Testing](docs/testing.md)
+- [PR Workflow](docs/pr-workflow.md)
+- [Parity plan](plans/parity.md)
+- [Port audit](docs/plan/audit.md)
 
 ## Contributing
 

@@ -26,6 +26,7 @@ exclude = [
     "lib",
     "temp",
     "build",
+    "docs/plan",
 
     # Specific files or patterns
     "CHANGELOG.md",
