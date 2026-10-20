@@ -46,7 +46,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `6d6c5cf` (port: Convert16 palette color overloads)
+- **Last commit:** `8ddc9ea` (port: grapheme width presentation parity)
 - **Gates:** `make lint` pass; `make test` pass (442 examples).
 
 ## Phase 1 — Core ANSI and parser parity
