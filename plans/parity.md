@@ -34,7 +34,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     structs that are not API surface; the audit marks them unchecked.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `f604e33` (vendor bump and upstream refresh plan)
+- **Last commit:** `a160ad2` (port: wcwidth per codepoint)
 - **Gates:** `make lint` pass; `make test` pass (405 examples).
 
 ## Phase 1 — Core ANSI and parser parity
