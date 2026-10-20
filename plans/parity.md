@@ -41,11 +41,15 @@ micro-commits.
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
     cube boundaries.
+  - Sixel decoder differential fuzzing (200 randomized images) matches Go for
+    raster bounds, out-of-bounds pixels, palette definitions, RLE, CR/LF, and
+    RLE token consumption.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last feature commit:** `137e0d4` (port: vendor displaywidth property tables)
+- **Last feature commit:** `9021a13` (port: vendor go-runewidth tables for
+  WcWidth)
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (466 examples).
+  (469 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -69,7 +73,8 @@ micro-commits.
       protocol
 - [x] iTerm2 file and inline image support
 - [x] Sixel codecs: encoder/decoder edge cases, HLS conversion, palette
-      quantization, pdqsort/xorshift, cube heap, and writer return values
+      quantization, pdqsort/xorshift, cube heap, writer return values, and
+      decoder bounds/RLE parity
 
 ## Phase 4 — Upstream refresh and maintenance
 

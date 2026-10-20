@@ -574,6 +574,30 @@ describe Ansi::Sixel do
         Ansi::Sixel::Decoder.new.decode(IO::Memory.new(""))
       end
     end
+
+    it "ignores pixels beyond the image height" do
+      data = "\"1;1;1;1#0;2;100;0;0~"
+      img = Ansi::Sixel::Decoder.new.decode(IO::Memory.new(data))
+      img.width.should eq 1
+      img.height.should eq 1
+      img.pixel(0, 0).should eq Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8)
+    end
+
+    it "ignores runs beyond the image width" do
+      data = "\"1;1;1;6#0;2;100;0;0!5@-"
+      img = Ansi::Sixel::Decoder.new.decode(IO::Memory.new(data))
+      img.width.should eq 1
+      img.height.should eq 6
+      img.pixel(0, 0).should eq Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8)
+    end
+
+    it "matches Go RLE token consumption" do
+      data = "\"1;1;3;1#0;2;100;0;0!2@@-"
+      img = Ansi::Sixel::Decoder.new.decode(IO::Memory.new(data))
+      img.pixel(0, 0).should eq Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8)
+      img.pixel(1, 0).should eq Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8)
+      img.pixel(2, 0).should eq Ansi::Color.new(0_u8, 0_u8, 0_u8, 0_u8)
+    end
   end
 
   describe "ScanSize (from Go TestScanSize)" do

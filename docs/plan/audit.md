@@ -384,7 +384,7 @@ that depends on Go's fused multiply-subtract behavior.
   - Crystal: `src/sixel.cr`
 ### Methods
 - `*Decoder.Decode` [x] (Crystal: `#decode`, raises `IO::EOFError` on empty
-  input like Go)
+  input, ignores out-of-bounds pixels, and consumes RLE tokens like Go)
 - `*Decoder.writePixel` [x] (Crystal: private `#write_pixel`)
 - `*Decoder.scanSize` [x] (Crystal: `#scan_size`)
 - `*Decoder.readError` [x] (Crystal: private `#read_error`)

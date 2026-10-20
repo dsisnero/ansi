@@ -934,6 +934,16 @@ module Ansi
         repeat, n = Sixel.decode_repeat(data[idx - 1..])
         raise ErrInvalidRepeat.new("invalid repeat") if n == 0
         idx += n - 1
+
+        # Match Go's decoder: the RLE reader consumes following digit and
+        # pixel bytes into its token buffer, even though only the repeat char
+        # is used. Those bytes are not decoded as pixels.
+        while idx < data.size
+          b = data[idx]
+          break unless (b >= '0'.ord && b <= '9'.ord) || sixel_pixel?(b)
+          idx += 1
+        end
+
         {repeat, idx}
       end
 
@@ -1046,7 +1056,8 @@ module Ansi
         y_offset = 0
         while masked_sixel != 0
           if masked_sixel & 1 != 0
-            img.set(x, band_y * 6 + y_offset, color)
+            y = band_y * 6 + y_offset
+            img.set(x, y, color) if x >= 0 && y >= 0 && x < img.width && y < img.height
           end
           y_offset += 1
           masked_sixel >>= 1
