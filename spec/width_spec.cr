@@ -66,6 +66,7 @@ describe "Ansi width helpers" do
       {"new arabic mark", "\u{0897}", 1, 0},
       {"new combining mark", "\u{1ACF}", 1, 0},
       {"musical symbol stem", "\u{1D165}", 1, 0},
+      {"kannada sign", "\u0CF3", 1, 0},
     ]
 
     cases.each do |name, input, grapheme, wcwidth|

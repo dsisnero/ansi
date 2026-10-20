@@ -150,16 +150,17 @@ mattn/go-runewidth          0.0.27
 - [x] Audit Crystal equivalents: `uniwidth` (runewidth tables) and
   `uni_text_seg` (uax29 graphemes), plus `colorful`, at their pinned versions.
 - [x] Check whether a newer `uniwidth`/`uni_text_seg` release is needed for the
-  width cases added in Phase 1: both are already at their latest tags (0.1.3),
-  so no shard bump is available.
-- [x] No `shard.yml` change; the width gaps are covered by the in-repo virama
-  merge and emoji fallback documented in `plans/parity.md`.
+  width cases added in Phase 1: both were already at their latest tags (0.1.3),
+  so no shard bump was available.
+- [x] Superseded during follow-up: width now vendors `displaywidth` v0.11.0 and
+  `go-runewidth` v0.0.27 tables directly; `uniwidth`/`unicode_width` were
+  removed, while `textseg` remains a direct dependency for grapheme splitting.
 - [x] No direct port of `go.mod`/`go.sum`; only behavior-affecting differences
   matter.
 
-Phase 3 is complete. `uniwidth`/`uni_text_seg` lag Go's refreshed
-`displaywidth`/`uax29`, and the Sixel HLS path now uses a native Go-compatible
-implementation instead of the Crystal `colorful` shard.
+Phase 3 is complete. Width classification is now vendored, and the Sixel HLS
+path uses a native Go-compatible implementation instead of the Crystal
+`colorful` shard.
 
 ## Phase 4 — Confirm no-op and already-ported files
 

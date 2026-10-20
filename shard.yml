@@ -12,12 +12,8 @@ dependencies:
   colorful:
     github: dsisnero/colorful
 
-  uniwidth:
-    github: naqvis/uni_char_width
-
-  unicode_width:
-    github: wyhaines/unicode_width.cr
-    version: ~> 1.0
+  textseg:
+    github: naqvis/uni_text_seg
 
   stumpy_png:
     github: stumpycr/stumpy_png

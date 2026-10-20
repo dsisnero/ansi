@@ -524,16 +524,17 @@ that depends on Go's fused multiply-subtract behavior.
 (no structs or methods)
 
 ## width.go
-(no structs or methods; `stringWidth` measures WcWidth per codepoint and
-GraphemeWidth with vendored `displaywidth` v0.11.0 property tables, plus Indic
-virama cluster joins)
+(no structs or methods; `stringWidth` measures WcWidth per codepoint with
+vendored go-runewidth v0.0.27 tables and GraphemeWidth with vendored
+`displaywidth` v0.11.0 tables, plus Indic virama cluster joins)
 
 ## width_test.go
 (no structs or methods)
 
 ## wcwidth.go
 ### Methods
-- `wcRuneWidth` [x] (Crystal: `Ansi.wc_rune_width`)
+- `wcRuneWidth` [x] (Crystal: `Ansi.wc_rune_width`, vendored go-runewidth
+  tables)
 - `wcClusterWidth` [x] (Crystal: `Ansi.wc_cluster_width`)
 - `isZeroWidthHigh` [x] (Crystal: `Unicode.zero_width?` binary search)
 

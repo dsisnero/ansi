@@ -74,16 +74,15 @@ describe "Ansi wcwidth helpers" do
   end
 
   it "honors East Asian ambiguous widths" do
-    condition = UnicodeCharWidth.default_condition
-    previous = condition.east_asian
-    condition.east_asian = true
+    previous = Ansi::WcWidthOptions.east_asian?
+    Ansi::WcWidthOptions.east_asian = true
     begin
       [0x00a1, 0x00b0, 0x00d7].each do |codepoint|
         Ansi.wc_rune_width(codepoint).should eq 2
       end
       Ansi.string_width_wc("¡°é").should eq 6
     ensure
-      condition.east_asian = previous
+      Ansi::WcWidthOptions.east_asian = previous
     end
   end
 end

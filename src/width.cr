@@ -1,5 +1,4 @@
-require "uniwidth"
-require "unicode_width"
+require "textseg"
 
 module Ansi
   def self.strip(s : String) : String
