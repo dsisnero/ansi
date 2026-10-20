@@ -6,8 +6,9 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** close the last open parity decisions. Color helpers and all
-  upstream tests are ported; the palette-sort ordering decision is next.
+- **Current focus:** close the last open parity decisions. Color transparency
+  and palette lookup semantics are now aligned; the palette-sort ordering
+  decision is next.
 - **Next up:**
   1. Decide whether to port `sixel/palette_sort.go`'s xorshift ordering or keep
      the documented deterministic-sort divergence (current tests pass either
@@ -27,9 +28,10 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
-    differential grid; `Color` now exposes hex/RGB/true-color/alpha/indexed/
-    basic conversion helpers.
-  - Sixel: encoder, decoder, palette quantization, and HSL conversion match Go.
+    differential grid; alpha-zero colors map to index 0; `Color` exposes
+    hex/RGB/true-color/alpha/indexed/basic conversion helpers.
+  - Sixel: encoder, decoder, palette quantization, and HSL conversion match Go;
+    unknown palette colors return index 0 like Go's map lookup.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -46,7 +48,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `24c8d11` (port: extend Color conversion helpers)
-- **Gates:** `make lint` pass; `make test` pass (419 examples).
+- **Gates:** `make lint` pass; `make test` pass (423 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

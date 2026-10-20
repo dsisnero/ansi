@@ -652,7 +652,7 @@ module Ansi
       end
 
       def color_index(color : SixelColor) : Int32
-        @palette_indexes[color]
+        @palette_indexes.fetch(color, 0)
       end
     end
 

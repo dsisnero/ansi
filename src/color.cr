@@ -335,6 +335,7 @@ module Ansi
   end
 
   def self.convert_256(color : Color) : IndexedColor
+    return IndexedColor.new(0_u8) if color.a == 0
     convert_256(Colorful::Color.new(r: color.r.to_f64 / 255.0, g: color.g.to_f64 / 255.0, b: color.b.to_f64 / 255.0))
   end
 
@@ -360,6 +361,7 @@ module Ansi
 
   def self.convert_256(color : XRGBAColor) : IndexedColor
     if c = color.color
+      return IndexedColor.new(0_u8) if c.a == 0
       convert_256(Colorful::Color.new(r: c.r.to_f64 / 255.0, g: c.g.to_f64 / 255.0, b: c.b.to_f64 / 255.0))
     else
       IndexedColor.new(0_u8)
@@ -432,6 +434,7 @@ module Ansi
   end
 
   def self.convert_16(color : Color) : BasicColor
+    return BasicColor.new(0_u8) if color.a == 0
     convert_16(to_colorful(color))
   end
 

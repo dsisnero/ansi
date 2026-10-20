@@ -371,6 +371,24 @@ describe "Color types (from Go implementation)" do
 end
 
 # Color distance and quantization
+describe "Transparent color conversions (from Go behavior)" do
+  it "maps alpha-zero colors to palette index 0" do
+    transparent = Ansi::Color.new(255_u8, 0_u8, 0_u8, 0_u8)
+    Ansi.convert_256(transparent).should eq Ansi::IndexedColor.new(0_u8)
+    Ansi.convert_16(transparent).should eq Ansi::BasicColor.new(0_u8)
+  end
+
+  it "maps alpha-zero XRGBAColor to palette index 0" do
+    transparent = Ansi::XRGBAColor.new(Ansi::Color.new(255_u8, 0_u8, 0_u8, 0_u8))
+    Ansi.convert_256(transparent).should eq Ansi::IndexedColor.new(0_u8)
+  end
+
+  it "keeps semi-transparent colors" do
+    Ansi.convert_256(Ansi::Color.new(255_u8, 0_u8, 0_u8, 128_u8))
+      .should eq Ansi::IndexedColor.new(196_u8)
+  end
+end
+
 describe "Convert256 boundary rounding (from Go)" do
   it "matches Go when a cube channel rounds down" do
     cases = {

@@ -533,6 +533,15 @@ describe Ansi::Sixel do
       end
       check_palette_lookups(palette)
     end
+
+    it "returns index 0 for unknown colors" do
+      image = Ansi::RGBAImage.new(1, 1)
+      image.set(0, 0, Ansi::Color.new(255_u8, 0_u8, 0_u8, 255_u8))
+
+      palette = Ansi::Sixel.new_palette(image, 4)
+      unknown = Ansi::Sixel::SixelColor.new(1_u32, 2_u32, 3_u32, 100_u32)
+      palette.color_index(unknown).should eq 0
+    end
   end
 
   describe "ScanSize (from Go TestScanSize)" do

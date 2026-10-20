@@ -51,6 +51,8 @@
 - `Convert16` [x] (Crystal: `Ansi.convert_16`)
 - `Color` conversion helpers [x] (Crystal: `Color#to_hex`, `#to_rgb`,
   `#to_true_color`, `#with_alpha`, `#to_indexed`, `#to_basic`)
+- Alpha-zero conversion [x] (Crystal: `convert_256`/`convert_16` return index 0,
+  matching Go's `colorful.MakeColor`)
 
 ## color_test.go
 All Go color tests are ported, including `Convert256` cube-boundary rounding
@@ -411,7 +413,8 @@ that depends on Go's fused multiply-subtract behavior.
 - `*cubePriorityQueue.Swap` [x] (Crystal: sorting handles swapping)
 - `*sixelPalette.createCube` [x] (Crystal: private `create_cube`)
 - `*sixelPalette.quantize` [x] (Crystal: private `quantize`)
-- `*sixelPalette.ColorIndex` [x] (Crystal: `Palette#color_index`)
+- `*sixelPalette.ColorIndex` [x] (Crystal: `Palette#color_index`, returns 0
+  for unknown colors like Go's map lookup)
 - `*sixelPalette.loadColor` [x] (Crystal: functionality in `create_cube`)
 
 ## sixel/palette_sort.go
