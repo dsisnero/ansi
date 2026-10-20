@@ -985,6 +985,8 @@ module Ansi
       def decode(io : IO) : Ansi::RGBAImage
         # Read all data from IO
         data = io.gets_to_end.to_slice
+        raise IO::EOFError.new if data.empty?
+
         idx = 0
 
         bounds, idx = read_raster_bounds(data, idx)

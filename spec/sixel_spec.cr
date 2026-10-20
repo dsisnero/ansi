@@ -544,6 +544,14 @@ describe Ansi::Sixel do
     end
   end
 
+  describe "Decoder error behavior" do
+    it "raises on empty input" do
+      expect_raises(IO::EOFError) do
+        Ansi::Sixel::Decoder.new.decode(IO::Memory.new(""))
+      end
+    end
+  end
+
   describe "ScanSize (from Go TestScanSize)" do
     it "two lines" do
       decoder = Ansi::Sixel::Decoder.new
