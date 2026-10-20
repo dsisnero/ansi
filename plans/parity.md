@@ -49,7 +49,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `1492d1f` (port: grapheme zero-width marks)
+- **Last commit:** `75a18ef` (port: unicode 17 width tables)
 - **Gates:** `make lint` pass; `make test` pass (450 examples).
 
 ## Phase 1 — Core ANSI and parser parity
