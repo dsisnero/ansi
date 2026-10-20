@@ -21,7 +21,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - Parser, transitions, decode helpers, handlers: ported; test helpers
     reconciled in the audit.
   - Width measurement: ported — `WcWidth` sums per-codepoint widths;
-    `GraphemeWidth` matches the refreshed Go tests.
+    `GraphemeWidth` matches Go for text-presentation emoji, regional
+    indicators, tag flags, keycaps, and the refreshed method tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
@@ -46,7 +47,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `6d6c5cf` (port: Convert16 palette color overloads)
-- **Gates:** `make lint` pass; `make test` pass (437 examples).
+- **Gates:** `make lint` pass; `make test` pass (442 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

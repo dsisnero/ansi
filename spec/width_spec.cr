@@ -47,4 +47,21 @@ describe "Ansi width helpers" do
       Ansi.string_width_wc(test_case[:input]).should eq test_case[:wcwidth]
     end
   end
+
+  describe "grapheme text presentation and regional indicators" do
+    cases = [
+      {"single regional indicator", "🇦", 2, 1},
+      {"three regional indicators", "🇦🇧🇨", 4, 3},
+      {"white flag without VS16", "🏳", 1, 1},
+      {"heart without VS16", "❤", 1, 1},
+      {"tag flag", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", 2, 2},
+    ]
+
+    cases.each do |name, input, grapheme, wcwidth|
+      it name do
+        Ansi.string_width(input).should eq grapheme
+        Ansi.string_width_wc(input).should eq wcwidth
+      end
+    end
+  end
 end
