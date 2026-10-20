@@ -415,7 +415,8 @@
 
 ## sixel/palette_test.go
 ### Structs
-- `testCase` [ ]
+- `testCase` [x] (Crystal: inline spec tables in `spec/sixel_spec.cr`; lookup-map
+  assertions ported)
 
 ## sixel/raster.go
 ### Structs

@@ -7,13 +7,12 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 ## Where we are
 
 - **Current focus:** port the remaining Sixel parity work. The upstream refresh
-  is complete: Wcwidth, Kitty `Quiet`, the dependency audit, and Sixel HSL
-  accuracy are done.
+  is complete: Wcwidth, Kitty `Quiet`, the dependency audit, Sixel HSL
+  accuracy, and palette quantization tests are done.
 - **Next up:**
-  1. Add the missing Sixel palette quantization tests.
-  2. Port the remaining color tests and extend `Color` functionality.
-  3. Implement the remaining Sixel decoder behavior and `FullImage` tests.
-  4. Re-audit `x/ansi` against the next newer upstream tag and add missing
+  1. Port the remaining color tests and extend `Color` functionality.
+  2. Implement the remaining Sixel decoder behavior and `FullImage` tests.
+  3. Re-audit `x/ansi` against the next newer upstream tag and add missing
      behavior.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
@@ -23,8 +22,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     `GraphemeWidth` matches the refreshed Go tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
-  - Sixel: HSL conversion now matches Go; decoder and palette quantization
-    still have gaps.
+  - Sixel: HSL conversion and palette quantization tests now match Go; decoder
+    and `FullImage` behavior still have gaps.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -56,7 +55,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 - [x] Kitty graphics encoder/decoder and options
 - [x] iTerm2 file and inline image support
 - [ ] Sixel decoder functionality and `FullImage` tests
-- [ ] Sixel palette quantization tests
+- [x] Sixel palette quantization tests
 - [x] Sixel HSL conversion accuracy
 
 ## Phase 3 — Newer upstream features

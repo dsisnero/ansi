@@ -1,5 +1,16 @@
 require "./spec_helper"
 
+def check_palette_lookups(palette : Ansi::Sixel::Palette)
+  palette.color_convert.each do |raw_color, palette_color|
+    index = palette.palette_indexes[raw_color]?
+    index.should_not be_nil
+    next unless index
+
+    index.should be < palette.palette_colors.size
+    palette.palette_colors[index].should eq palette_color
+  end
+end
+
 describe Ansi::Sixel do
   describe "Raster" do
     it "basic case" do
@@ -429,6 +440,7 @@ describe Ansi::Sixel do
       expected.each do |exp|
         palette.palette_colors.should contain(exp)
       end
+      check_palette_lookups(palette)
     end
 
     it "just the right number of colors" do
@@ -451,6 +463,7 @@ describe Ansi::Sixel do
       expected.each do |exp|
         palette.palette_colors.should contain(exp)
       end
+      check_palette_lookups(palette)
     end
 
     it "color reduction" do
@@ -471,6 +484,7 @@ describe Ansi::Sixel do
       expected.each do |exp|
         palette.palette_colors.should contain(exp)
       end
+      check_palette_lookups(palette)
     end
   end
 
@@ -496,6 +510,7 @@ describe Ansi::Sixel do
       expected.each do |exp|
         palette.palette_colors.should contain(exp)
       end
+      check_palette_lookups(palette)
     end
 
     it "color reduction" do
@@ -516,6 +531,7 @@ describe Ansi::Sixel do
       expected.each do |exp|
         palette.palette_colors.should contain(exp)
       end
+      check_palette_lookups(palette)
     end
   end
 

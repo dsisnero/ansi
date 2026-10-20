@@ -641,8 +641,14 @@ module Ansi
 
     struct Palette
       getter palette_colors : Array(SixelColor)
+      getter color_convert : Hash(SixelColor, SixelColor)
+      getter palette_indexes : Hash(SixelColor, Int32)
 
-      def initialize(@palette_colors : Array(SixelColor), @palette_indexes : Hash(SixelColor, Int32))
+      def initialize(
+        @palette_colors : Array(SixelColor),
+        @color_convert : Hash(SixelColor, SixelColor),
+        @palette_indexes : Hash(SixelColor, Int32),
+      )
       end
 
       def color_index(color : SixelColor) : Int32
@@ -659,6 +665,7 @@ module Ansi
 
       unique_colors = pixel_counts.keys
       palette_colors = quantize(unique_colors, pixel_counts, max_colors)
+      color_convert = Hash(SixelColor, SixelColor).new
       palette_indexes = Hash(SixelColor, Int32).new
 
       unique_colors.each do |color|
@@ -675,10 +682,11 @@ module Ansi
             best_index = idx
           end
         end
+        color_convert[color] = palette_colors[best_index]
         palette_indexes[color] = best_index
       end
 
-      Palette.new(palette_colors, palette_indexes)
+      Palette.new(palette_colors, color_convert, palette_indexes)
     end
 
     private enum QuantizationChannel
