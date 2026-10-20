@@ -772,13 +772,13 @@ module Ansi
         segment = unique_colors[cube.start_index, cube.length]
         case cube.slice_channel
         when QuantizationChannel::Red
-          segment.sort_by!(&.red)
+          PaletteSort.sort!(segment) { |left, right| left.red <=> right.red }
         when QuantizationChannel::Green
-          segment.sort_by!(&.green)
+          PaletteSort.sort!(segment) { |left, right| left.green <=> right.green }
         when QuantizationChannel::Blue
-          segment.sort_by!(&.blue)
+          PaletteSort.sort!(segment) { |left, right| left.blue <=> right.blue }
         when QuantizationChannel::Alpha
-          segment.sort_by!(&.alpha)
+          PaletteSort.sort!(segment) { |left, right| left.alpha <=> right.alpha }
         end
         unique_colors[cube.start_index, cube.length] = segment
 

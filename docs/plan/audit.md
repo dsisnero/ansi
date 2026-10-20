@@ -419,7 +419,10 @@ that depends on Go's fused multiply-subtract behavior.
 
 ## sixel/palette_sort.go
 ### Methods
-- `*xorshift.Next` [ ] (not needed; Crystal uses deterministic sorting)
+- `sortFunc` [x] (Crystal: `PaletteSort.sort!`)
+- `*xorshift.Next` [x] (Crystal: `PaletteSort::Xorshift#next_value`)
+- `nextPowerOfTwo` [x] (Crystal: `PaletteSort.next_power_of_two`)
+- pdqsort helpers [x] (Crystal: private `PaletteSort` methods)
 
 ## sixel/palette_test.go
 ### Structs
