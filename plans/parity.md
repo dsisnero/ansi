@@ -31,7 +31,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     every palette color type; `Color` exposes hex/RGB/true-color/alpha/indexed/
     basic conversion helpers.
   - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
-    segment sorting (pdqsort + xorshift), and cube priority queue all match Go.
+    segment sorting (pdqsort + xorshift), and cube priority queue all match Go;
+    nil images produce no output like upstream.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -50,7 +51,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `75a18ef` (port: unicode 17 width tables)
-- **Gates:** `make lint` pass; `make test` pass (450 examples).
+- **Gates:** `make lint` pass; `make test` pass (451 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

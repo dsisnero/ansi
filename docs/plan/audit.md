@@ -393,7 +393,7 @@ that depends on Go's fused multiply-subtract behavior.
   - Crystal: `src/sixel.cr`
 - `sixelBuilder` [x] (Crystal: `SixelBuilder`)
 ### Methods
-- `*Encoder.Encode` [x] (Crystal: `#encode`)
+- `*Encoder.Encode` [x] (Crystal: `#encode`, including nil/zero-size no-ops)
 - `*Encoder.encodePaletteColor` [x] (logic in `#encode`)
 - `*sixelBuilder.BandHeight` [x] (Crystal: `#band_height`)
 - `*sixelBuilder.SetColor` [x] (Crystal: `#set_color`)

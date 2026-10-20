@@ -920,6 +920,12 @@ describe Ansi::Sixel do
       Ansi::Sixel::Encoder.new.should be_a(Ansi::Sixel::Encoder)
     end
 
+    it "writes nothing for a nil image" do
+      io = IO::Memory.new
+      Ansi::Sixel::Encoder.new.encode(io, nil)
+      io.to_s.should eq ""
+    end
+
     # Actual encoder tests will need image creation and encoding
     # We'll add those after we verify the encoder works
   end

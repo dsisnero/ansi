@@ -1044,6 +1044,9 @@ module Ansi
     end
 
     class Encoder
+      def encode(io : IO, image : Nil) : Nil
+      end
+
       def encode(io : IO, image : Ansi::Image) : Nil
         return if image.width == 0 || image.height == 0
 
