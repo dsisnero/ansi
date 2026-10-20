@@ -6,14 +6,18 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** port the remaining Sixel parity work. The upstream refresh
-  is complete: Wcwidth, Kitty `Quiet`, the dependency audit, Sixel HSL
-  accuracy, and palette quantization tests are done.
+- **Current focus:** the upstream refresh and the remaining color/Sixel feature
+  work are complete. Next is a forward re-audit and cleanup of the remaining
+  audit-only entries.
 - **Next up:**
-  1. Port the remaining color tests and extend `Color` functionality.
-  2. Implement the remaining Sixel decoder behavior and `FullImage` tests.
-  3. Re-audit `x/ansi` against the next newer upstream tag and add missing
-     behavior.
+  1. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
+     the latest) and refresh the vendor pin/plan when it moves.
+  2. Reconcile the remaining audit entries that are only Go test helper structs
+     in `mouse_test.go` and `parser_test.go`; confirm there are no API gaps.
+  3. Decide whether to port `sixel/palette_sort.go`'s xorshift ordering or keep
+     the documented deterministic-sort divergence.
+  4. Add more differential color/width characterization tests if upstream
+     dependency tables advance.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
@@ -22,8 +26,9 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     `GraphemeWidth` matches the refreshed Go tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
-  - Sixel: HSL conversion and palette quantization tests now match Go; decoder
-    and `FullImage` behavior still have gaps.
+  - Color conversions: ported — `Convert256` matches Go across a 140,608-color
+    differential grid, including cube-boundary rounding.
+  - Sixel: encoder, decoder, palette quantization, and HSL conversion match Go.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -35,12 +40,12 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     GB9c virama merge stay in-repo until those shards update.
   - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
     rounding, not the Crystal `colorful` shard.
-  - `sixel/palette_test.go` and `parser_test.go` contain Go test-only helper
-    structs that are not API surface; the audit marks them unchecked.
+  - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
+    cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `ac36a74` (port: sixel palette quantization tests)
-- **Gates:** `make lint` pass; `make test` pass (412 examples).
+- **Gates:** `make lint` pass; `make test` pass (413 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
@@ -54,9 +59,10 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 - [x] Kitty graphics encoder/decoder and options
 - [x] iTerm2 file and inline image support
-- [ ] Sixel decoder functionality and `FullImage` tests
+- [x] Sixel decoder functionality and `FullImage` tests
 - [x] Sixel palette quantization tests
 - [x] Sixel HSL conversion accuracy
+- [x] Remaining color tests and `Convert256` boundary parity
 
 ## Phase 3 — Newer upstream features
 

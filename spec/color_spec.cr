@@ -341,6 +341,26 @@ describe "Color types (from Go implementation)" do
 end
 
 # Color distance and quantization
+describe "Convert256 boundary rounding (from Go)" do
+  it "matches Go when a cube channel rounds down" do
+    cases = {
+      {0, 0, 155}     => 18,
+      {0, 50, 155}    => 24,
+      {20, 185, 155}  => 36,
+      {45, 155, 210}  => 32,
+      {95, 155, 70}   => 65,
+      {155, 80, 100}  => 95,
+      {215, 135, 155} => 174,
+    }
+
+    cases.each do |rgb, want|
+      r, g, b = rgb
+      color = Ansi::Color.new(r.to_u8, g.to_u8, b.to_u8)
+      Ansi.convert_256(color).should eq Ansi::IndexedColor.new(want.to_u8)
+    end
+  end
+end
+
 describe "Color distance and quantization" do
   it "calculates color distance" do
     # Same color should have distance 0

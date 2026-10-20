@@ -347,11 +347,11 @@ module Ansi
     q2c = [0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff]
 
     # Map RGB to 6x6x6 cube
-    qr = to_6_cube(r)
+    qr = to_6_cube(color.r)
     cr = q2c[qr]
-    qg = to_6_cube(g)
+    qg = to_6_cube(color.g)
     cg = q2c[qg]
-    qb = to_6_cube(b)
+    qb = to_6_cube(color.b)
     cb = q2c[qb]
 
     # If we have hit the color exactly, return early.
@@ -410,14 +410,16 @@ module Ansi
     BasicColor.new(ANSI256_TO_16[c256.value])
   end
 
-  private def self.to_6_cube(v : Float64) : Int32
-    vi = v.to_i
-    if vi < 48
+  private def self.to_6_cube(channel : Float64) : Int32
+    v = channel * 255.0
+    if v < 48.0
       0
-    elsif vi < 115
+    elsif v < 115.0
       1
     else
-      ((vi - 35) / 40).to_i
+      # Go's compiler contracts `channel*255 - 35` into one fused operation.
+      # Use fma here so boundary values round the same way.
+      (Math.fma(channel, 255.0, -35.0) / 40.0).to_i
     end
   end
 

@@ -47,9 +47,12 @@
 - `IndexedColor.RGBA` [x] (Crystal: `#rgba`)
 - `TrueColor.RGBA` [x] (Crystal: `#rgba`)
 - `RGBColor.RGBA` [x] (Crystal: `#rgba`)
+- `Convert256` [x] (Crystal: `Ansi.convert_256`, Go-compatible fma rounding)
+- `Convert16` [x] (Crystal: `Ansi.convert_16`)
 
 ## color_test.go
-(no structs or methods)
+All Go color tests are ported, including `Convert256` cube-boundary rounding
+that depends on Go's fused multiply-subtract behavior.
 
 ## ctrl.go
 (no structs or methods)
