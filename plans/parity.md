@@ -47,7 +47,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     priority queue still uses Crystal sort/shift instead of `container/heap`.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `24c8d11` (port: extend Color conversion helpers)
+- **Last commit:** `b7c7e17` (port: sixel palette sort)
 - **Gates:** `make lint` pass; `make test` pass (429 examples).
 
 ## Phase 1 — Core ANSI and parser parity
