@@ -37,6 +37,12 @@ describe Ansi::Sixel do
       raster = Ansi::Sixel::Raster.new(pan: 1, pad: 2, ph: 0, pv: 3)
       raster.to_s.should eq "\"1;2;0;3"
     end
+
+    it "returns the number of bytes written" do
+      io = IO::Memory.new
+      raster = Ansi::Sixel::Raster.new(pan: 2, pad: 3, ph: 4, pv: 5)
+      raster.write_to(io).should eq io.to_s.bytesize
+    end
   end
 
   describe "Repeat" do
@@ -58,6 +64,12 @@ describe Ansi::Sixel do
     it "zero count" do
       repeat = Ansi::Sixel::Repeat.new(count: 0, char: 'B')
       repeat.to_s.should eq "!0B"
+    end
+
+    it "returns the number of bytes written" do
+      io = IO::Memory.new
+      repeat = Ansi::Sixel::Repeat.new(count: 123, char: 'x')
+      repeat.write_to(io).should eq io.to_s.bytesize
     end
   end
 
@@ -85,6 +97,12 @@ describe Ansi::Sixel do
       io = IO::Memory.new
       Ansi::Sixel.write_color(io, 1, 3, 0, 0, 0)
       io.to_s.should eq "#1"
+    end
+
+    it "returns the number of bytes written" do
+      io = IO::Memory.new
+      n = Ansi::Sixel.write_color(io, 1, 2, 50, 60, 70)
+      n.should eq io.to_s.bytesize
     end
   end
 

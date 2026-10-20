@@ -26,14 +26,19 @@ module Ansi
       if pad == 0
         return write_raster(io, 1, 1, ph, pv)
       end
-      if ph <= 0 && pv <= 0
-        io.write_byte(RasterAttribute)
-        io << pan << ';' << pad
-        return 0
-      end
-      io.write_byte(RasterAttribute)
-      io << pan << ';' << pad << ';' << ph << ';' << pv
-      0
+      sequence = if ph <= 0 && pv <= 0
+                   String.build do |builder|
+                     builder.write_byte(RasterAttribute)
+                     builder << pan << ';' << pad
+                   end
+                 else
+                   String.build do |builder|
+                     builder.write_byte(RasterAttribute)
+                     builder << pan << ';' << pad << ';' << ph << ';' << pv
+                   end
+                 end
+      io << sequence
+      sequence.bytesize
     end
 
     struct Raster
@@ -55,9 +60,12 @@ module Ansi
     end
 
     def self.write_repeat(io : IO, count : Int32, char : Char) : Int32
-      io.write_byte(RepeatIntroducer)
-      io << count << char
-      0
+      sequence = String.build do |builder|
+        builder.write_byte(RepeatIntroducer)
+        builder << count << char
+      end
+      io << sequence
+      sequence.bytesize
     end
 
     struct Repeat
@@ -77,14 +85,19 @@ module Ansi
     end
 
     def self.write_color(io : IO, pc : Int32, pu : Int32, px : Int32, py : Int32, pz : Int32) : Int32
-      if pu <= 0 || pu > 2
-        io.write_byte(ColorIntroducer)
-        io << pc
-        return 0
-      end
-      io.write_byte(ColorIntroducer)
-      io << pc << ';' << pu << ';' << px << ';' << py << ';' << pz
-      0
+      sequence = if pu <= 0 || pu > 2
+                   String.build do |builder|
+                     builder.write_byte(ColorIntroducer)
+                     builder << pc
+                   end
+                 else
+                   String.build do |builder|
+                     builder.write_byte(ColorIntroducer)
+                     builder << pc << ';' << pu << ';' << px << ';' << py << ';' << pz
+                   end
+                 end
+      io << sequence
+      sequence.bytesize
     end
 
     # FromColor returns a Sixel color from a color. It converts the color

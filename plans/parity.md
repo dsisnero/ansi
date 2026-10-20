@@ -32,7 +32,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     basic conversion helpers and renders as `#rrggbb`.
   - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
     segment sorting (pdqsort + xorshift), and cube priority queue all match Go;
-    nil/zero-size images and empty decoder input follow upstream semantics.
+    nil/zero-size images, empty decoder input, and writer byte counts follow
+    upstream semantics.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
   - Repository quality gates: `make build`, format, lint, and test run in
     GitHub Actions.
@@ -53,7 +54,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `b6b79d0` (port: sixel empty decoder input parity)
-- **Gates:** `make lint` pass; `make test` pass (456 examples).
+- **Gates:** `make lint` pass; `make test` pass (459 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
