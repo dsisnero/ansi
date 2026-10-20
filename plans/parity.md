@@ -43,7 +43,7 @@ bundle a broad area (for example "all colors") into a single work unit.
     cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `5d7db0b` (docs: record sixel FromColor nil parity)
+- **Last commit:** `14928dd` (docs: split parity phases into feature-sized units)
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
   (460 examples).
 
