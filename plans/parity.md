@@ -22,7 +22,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     reconciled in the audit.
   - Width measurement: ported — `WcWidth` sums per-codepoint widths;
     `GraphemeWidth` matches Go for text-presentation emoji, regional
-    indicators, tag flags, keycaps, and the refreshed method tests.
+    indicators, tag flags, keycaps, standalone zero-width marks, and the
+    refreshed method tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
@@ -47,7 +48,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `8ddc9ea` (port: grapheme width presentation parity)
-- **Gates:** `make lint` pass; `make test` pass (442 examples).
+- **Gates:** `make lint` pass; `make test` pass (445 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

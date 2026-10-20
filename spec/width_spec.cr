@@ -55,6 +55,9 @@ describe "Ansi width helpers" do
       {"white flag without VS16", "🏳", 1, 1},
       {"heart without VS16", "❤", 1, 1},
       {"tag flag", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", 2, 2},
+      {"standalone hebrew point", "\u0591", 0, 0},
+      {"standalone arabic number sign", "\u0600", 0, 0},
+      {"standalone devanagari virama", "\u094d", 0, 0},
     ]
 
     cases.each do |name, input, grapheme, wcwidth|

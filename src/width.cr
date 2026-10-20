@@ -198,19 +198,24 @@ module Ansi
   private def self.grapheme_cluster_width(cps : Array(Int32)) : Int32
     regional_count = cps.count { |codepoint| regional_indicator?(codepoint) }
     return ((regional_count + 1) // 2) * 2 if regional_count > 0
-
-    return 2 if cps.includes?(0x20e3) # enclosing keycap
-    return 2 if cps.includes?(0xfe0f) # VS16 emoji presentation
-    return 2 if cps.any? { |codepoint| codepoint >= 0xe0020 && codepoint <= 0xe007f }
-    return 2 if cps.includes?(0x200d) && cps.any? { |codepoint| emoji_codepoint?(codepoint) }
+    return 2 if emoji_presentation?(cps)
 
     cps.each do |codepoint|
+      next if Unicode.zero_width?(codepoint)
+
       width = UnicodeCharWidth.width(codepoint)
       # The width shard's double-width table predates recent emoji blocks.
       width = 2 if width == 1 && codepoint >= 0x1f900 && emoji_codepoint?(codepoint)
       return width if width > 0
     end
     0
+  end
+
+  private def self.emoji_presentation?(cps : Array(Int32)) : Bool
+    return true if cps.includes?(0x20e3) # enclosing keycap
+    return true if cps.includes?(0xfe0f) # VS16 emoji presentation
+    return true if cps.any? { |codepoint| codepoint >= 0xe0020 && codepoint <= 0xe007f }
+    cps.includes?(0x200d) && cps.any? { |codepoint| emoji_codepoint?(codepoint) }
   end
 
   private def self.regional_indicator?(codepoint : Int32) : Bool
