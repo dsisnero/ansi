@@ -6,32 +6,37 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** maintain API and spec parity with the vendored
-  `charmbracelet/x/ansi` checkout at commit `eeb2896`, and port newer upstream
-  features when requested.
+- **Current focus:** execute
+  [`plans/upstream-refresh-cb897cb.md`](upstream-refresh-cb897cb.md) — port the
+  `ansi/` changes between `eeb2896` and the new `cb897cb` vendor pin.
 - **Next up:**
-  1. Fix HSL conversion accuracy in Sixel so pure colors match Go.
-  2. Add the missing Sixel palette quantization tests.
-  3. Port the remaining color tests and extend `Color` functionality.
-  4. Implement the remaining Sixel decoder behavior and `FullImage` tests.
-  5. Reconcile the test-only unchecked entries in the audit; confirm
-     `sixel/palette_sort.go`'s xorshift remains intentionally unnecessary.
+  1. Port Wcwidth per codepoint (`wcwidth.go`, `width.go`,
+     `parser_decode.go`, plus `wcwidth_test.go`, `method_test.go`,
+     `width_test.go`).
+  2. Port the Kitty `Quiet` option rename while keeping deprecated `Quite`.
+  3. Audit Crystal width dependencies against the upstream `go.mod` bumps.
+  4. Fix HSL conversion accuracy in Sixel so pure colors match Go.
+  5. Add the missing Sixel palette quantization tests.
+  6. Port the remaining color tests and extend `Color` functionality.
+  7. Implement the remaining Sixel decoder behavior and `FullImage` tests.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
   - Parser, transitions, decode helpers, handlers: ported.
-  - Kitty and iTerm2 graphics: ported.
+  - Width measurement: needs the per-codepoint WcWidth model from the refresh.
+  - Kitty and iTerm2 graphics: ported; Kitty `Quiet` rename pending.
   - Sixel: in progress — decoder and palette quantization have gaps.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
-  - The vendored submodule is pinned at `eeb2896`; newer tagged files are not
-    present in that checkout. Fetch the specific tag when porting a newer
-    feature and record it here (see `docs/development.md`).
+  - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
+    checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
+  - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
+    (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
   - `sixel/palette_test.go` and `parser_test.go` contain Go test-only helper
     structs that are not API surface; the audit marks them unchecked.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `e5a6c9b Port OSC 7501 program status encoding from Go`
+- **Last commit:** `aa47d48` (scaffold resumable agent docs and parity plan)
 - **Gates:** `make lint` pass; `make test` pass (338 examples).
 
 ## Phase 1 — Core ANSI and parser parity
@@ -53,7 +58,11 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 ## Phase 3 — Newer upstream features
 
 - [x] Program Status Protocol (OSC 7501) from `ansi/v0.11.9`
-- [ ] Re-audit `x/ansi` against a newer upstream tag and add missing behavior
+- [ ] Port Wcwidth per codepoint from the `cb897cb` refresh
+- [ ] Port the Kitty `Quiet` option rename from the `cb897cb` refresh
+- [ ] Audit width dependencies against the refreshed upstream `go.mod`
+- [ ] Re-audit `x/ansi` against the next newer upstream tag and add missing
+      behavior
 
 ## Intentional divergences
 
