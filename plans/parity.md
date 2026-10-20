@@ -6,16 +6,16 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** the upstream refresh and the remaining color/Sixel feature
-  work are complete. Next is a forward re-audit and cleanup of the remaining
-  audit-only entries.
+- **Current focus:** close the last open parity decisions. Color helpers and all
+  upstream tests are ported; the palette-sort ordering decision is next.
 - **Next up:**
-  1. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
+  1. Decide whether to port `sixel/palette_sort.go`'s xorshift ordering or keep
+     the documented deterministic-sort divergence (current tests pass either
+     way).
+  2. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
      the latest) and refresh the vendor pin/plan when it moves.
-  2. Reconcile the remaining audit entries that are only Go test helper structs
+  3. Reconcile the remaining audit entries that are only Go test helper structs
      in `mouse_test.go` and `parser_test.go`; confirm there are no API gaps.
-  3. Decide whether to port `sixel/palette_sort.go`'s xorshift ordering or keep
-     the documented deterministic-sort divergence.
   4. Add more differential color/width characterization tests if upstream
      dependency tables advance.
 - **Status by area:**
@@ -27,7 +27,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
-    differential grid, including cube-boundary rounding.
+    differential grid; `Color` now exposes hex/RGB/true-color/alpha/indexed/
+    basic conversion helpers.
   - Sixel: encoder, decoder, palette quantization, and HSL conversion match Go.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
@@ -45,7 +46,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `4d34615` (port: Convert256 cube-boundary parity)
-- **Gates:** `make lint` pass; `make test` pass (413 examples).
+- **Gates:** `make lint` pass; `make test` pass (419 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

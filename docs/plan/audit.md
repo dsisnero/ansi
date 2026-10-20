@@ -49,6 +49,8 @@
 - `RGBColor.RGBA` [x] (Crystal: `#rgba`)
 - `Convert256` [x] (Crystal: `Ansi.convert_256`, Go-compatible fma rounding)
 - `Convert16` [x] (Crystal: `Ansi.convert_16`)
+- `Color` conversion helpers [x] (Crystal: `Color#to_hex`, `#to_rgb`,
+  `#to_true_color`, `#with_alpha`, `#to_indexed`, `#to_basic`)
 
 ## color_test.go
 All Go color tests are ported, including `Convert256` cube-boundary rounding

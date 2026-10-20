@@ -16,6 +16,36 @@ module Ansi
       Color.new(0_u8, 0_u8, 0_u8, 0xff_u8)
     end
 
+    # Returns the color as a lowercase `#rrggbb` hex string.
+    def to_hex : String
+      Ansi.color_to_hex_string(self)
+    end
+
+    # Returns the color as an [RGBColor].
+    def to_rgb : RGBColor
+      RGBColor.new(@r, @g, @b)
+    end
+
+    # Returns the color as a [TrueColor].
+    def to_true_color : TrueColor
+      TrueColor.new((@r.to_u32 << 16) | (@g.to_u32 << 8) | @b.to_u32)
+    end
+
+    # Returns a copy of the color with a different alpha channel.
+    def with_alpha(alpha : UInt8) : Color
+      Color.new(@r, @g, @b, alpha)
+    end
+
+    # Returns the closest xterm 256-color palette entry.
+    def to_indexed : IndexedColor
+      Ansi.convert_256(self)
+    end
+
+    # Returns the closest ANSI 16-color palette entry.
+    def to_basic : BasicColor
+      Ansi.convert_16(self)
+    end
+
     def rgba : {UInt32, UInt32, UInt32, UInt32}
       {r.to_u32 * 0x101_u32, g.to_u32 * 0x101_u32, b.to_u32 * 0x101_u32, a.to_u32 * 0x101_u32}
     end

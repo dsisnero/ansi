@@ -26,6 +26,36 @@ describe Ansi::Color do
       black.a.should eq 255_u8
     end
   end
+
+  describe "conversion helpers" do
+    it "returns a hex string" do
+      Ansi::Color.new(255_u8, 128_u8, 64_u8).to_hex.should eq "#ff8040"
+    end
+
+    it "converts to RGBColor" do
+      color = Ansi::Color.new(255_u8, 128_u8, 64_u8)
+      color.to_rgb.should eq Ansi::RGBColor.new(255_u8, 128_u8, 64_u8)
+    end
+
+    it "converts to TrueColor" do
+      Ansi::Color.new(255_u8, 128_u8, 64_u8).to_true_color.should eq Ansi::TrueColor.new(0xff8040_u32)
+    end
+
+    it "returns a copy with a new alpha" do
+      color = Ansi::Color.new(255_u8, 128_u8, 64_u8, 255_u8)
+      changed = color.with_alpha(128_u8)
+      changed.should eq Ansi::Color.new(255_u8, 128_u8, 64_u8, 128_u8)
+      color.a.should eq 255_u8
+    end
+
+    it "converts to an indexed color" do
+      Ansi::Color.new(255_u8, 0_u8, 0_u8).to_indexed.should eq Ansi::IndexedColor.new(196_u8)
+    end
+
+    it "converts to a basic color" do
+      Ansi::Color.new(255_u8, 0_u8, 0_u8).to_basic.should eq Ansi::BasicColor.new(9_u8)
+    end
+  end
 end
 
 # Pending tests for missing color functionality
