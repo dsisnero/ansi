@@ -63,8 +63,10 @@ See [docs/resuming.md](docs/resuming.md) for the full resume checklist.
 - `plans/parity.md` starts with a **Where we are** block (`Current focus`,
   `Next up`, status by area, gotchas, last commit, gates). Refresh it before
   every commit and before ending a session.
-- Work items are feature-sized (roughly one branch/commit). Per-symbol state
-  lives in `docs/plan/audit.md`, not in the plan.
+- Work items are feature-sized (one shippable branch/commit). Batch related
+  behavior, tests, audit rows, and plan updates into that commit; do not split
+  one feature into per-edge-case micro-commits. Per-symbol state lives in
+  `docs/plan/audit.md`, not in the plan.
 - If `plans/parity.md` grows too large, split areas into
   `plans/parity/<area>.md` files, link each from `plans/parity.md`, and
   mark each split file complete/in-progress plus the area being worked on

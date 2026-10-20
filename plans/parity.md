@@ -4,27 +4,27 @@ Curated feature roadmap for the Crystal port. Keep this file human-curated and
 refresh the **Where we are** block after every feature. Per-symbol coverage
 lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
-Each checkbox is one commit-sized feature. If an upstream change touches
-several unrelated files or behaviors, split it into separate items. Do not
-bundle a broad area (for example "all colors") into a single work unit.
+Each checkbox is one shippable, feature-sized commit. A feature may span
+several files and upstream tests; batch related behavior, tests, audit rows,
+and plan updates into that commit. Do not split one feature into per-edge-case
+micro-commits.
 
 ## Where we are
 
 - **Current focus:** maintenance. Every upstream file in the pinned checkout
   has a Crystal counterpart, and the audit ledger has no unchecked rows.
 - **Next up:**
-  1. Re-audit `x/ansi` against upstream `main` and refresh the vendor pin.
-     This is expected to be a no-op while `main` remains `cb897cb`.
-  2. Decide whether to vendor/port `clipperhouse/displaywidth` tables for
-     exact width parity with Go's tables.
-  3. Add a CI matrix covering the supported Crystal versions.
+  1. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
+     coherent feature. This is expected to be a no-op while `main` remains
+     `cb897cb`.
+  2. Port/vendor `clipperhouse/displaywidth` tables as one feature if exact
+     width parity becomes a requirement.
+  3. Harden CI as one feature: Crystal version matrix plus dependency caching.
 - **Status by area:**
-  - Core ANSI sequences: ported.
-  - Parser and decode helpers: ported.
+  - Core ANSI sequences and parser: ported.
   - Width measurement: ported with Unicode 17 tables plus targeted fallbacks.
   - Colors and conversions: ported.
-  - Kitty and iTerm2 graphics: ported.
-  - Sixel codecs and quantization: ported.
+  - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
   - Quality gates: build, format, lint, and test run locally and in CI.
 - **Scoping notes / gotchas:**
@@ -43,74 +43,45 @@ bundle a broad area (for example "all colors") into a single work unit.
     cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `14928dd` (docs: split parity phases into feature-sized units)
+- **Last feature commit:** `505ff26` (port: sixel FromColor nil parity)
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
   (460 examples).
 
-## Phase 1 — Core ANSI sequences
+## Phase 1 — Core ANSI and parser
 
-- [x] Foreground, background, and cursor color setters and resets
-- [x] Palette set and reset sequences
-- [x] Icon name, window title, and DEC title aliases
-- [x] Cursor movement, positioning, and cursor style helpers
-- [x] ANSI and DEC mode helpers
-- [x] Mouse X10, SGR, and URXVT encoders
-- [x] Clipboard set, reset, and request sequences
-- [x] OSC 9 and OSC 99 notifications
-- [x] Working-directory reporting
-- [x] OSC 8 hyperlinks
-- [x] Focus tracking and bracketed paste
-- [x] Passthrough, tmux passthrough, and inband resize
-- [x] Keypad, charset, reset, screen, termcap, and window-operation helpers
+- [x] Sequence builders: colors, palette, titles, cursor, modes, mouse,
+      clipboard, notifications, hyperlinks, CWD, focus, paste, passthrough, and
+      terminal control helpers
+- [x] Parser: state machine, transitions, handler API, decode helpers, and the
+      supporting Go test port
 
-## Phase 2 — Parser
+## Phase 2 — Width and colors
 
-- [x] Parser state machine and transition table
-- [x] Parser params, command, data, and handler API
-- [x] Decode sequence, command, and parameter helpers
-- [x] Control, ESC, CSI, DCS, OSC, and APC sequence handling
-- [x] Parser support helpers and dispatcher test coverage
+- [x] Width model: Wcwidth per codepoint, GraphemeWidth presentation/RI/tag/
+      zero-width handling, Unicode 17 tables, Indic GB9c joins, and differential
+      coverage against Go
+- [x] Color system: Convert256/Convert16 parity, transparency handling, Color
+      conversion helpers, and hex rendering
 
-## Phase 3 — Width and colors
+## Phase 3 — Graphics codecs
 
-- [x] Wcwidth per-codepoint measurement
-- [x] Grapheme text-presentation, keycap, regional-indicator, and tag handling
-- [x] Standalone zero-width mark handling
-- [x] Unicode 17 wide-rune tables via `unicode_width`
-- [x] `Convert256` cube-boundary parity
-- [x] `Convert16` overloads for every palette color type
-- [x] Transparent and semi-transparent color handling
-- [x] Color conversion helpers (`to_hex`, `to_rgb`, `to_true_color`,
-      `with_alpha`, `to_indexed`, `to_basic`)
-- [x] `Color#hex` and `Color#to_s` rendering
-
-## Phase 4 — Graphics codecs
-
-- [x] Kitty graphics encoder and decoder
-- [x] Kitty options and the `Quiet` rename with deprecated `Quite`
-- [x] Kitty keyboard protocol
+- [x] Kitty graphics encoder/decoder, options (`Quiet`/`Quite`), and keyboard
+      protocol
 - [x] iTerm2 file and inline image support
-- [x] Sixel HLS conversion accuracy
-- [x] Sixel palette quantization and lookup tests
-- [x] Sixel palette segment sort (pdqsort + xorshift)
-- [x] Sixel cube priority queue
-- [x] Sixel nil and zero-size encoder behavior
-- [x] Sixel empty decoder input behavior
-- [x] Sixel writer byte-count return values
-- [x] Sixel `FromColor(nil)` behavior
+- [x] Sixel codecs: encoder/decoder edge cases, HLS conversion, palette
+      quantization, pdqsort/xorshift, cube heap, and writer return values
 
-## Phase 5 — Upstream refresh and maintenance
+## Phase 4 — Upstream refresh and maintenance
 
-- [x] Program Status Protocol (OSC 7501) from `ansi/v0.11.9`
-- [x] Wcwidth per codepoint from the `cb897cb` refresh
-- [x] Kitty `Quiet` rename from the `cb897cb` refresh
-- [x] Width dependency audit against the refreshed upstream `go.mod`
-- [x] Build gate and GitHub Actions CI
-- [ ] Re-audit upstream `main` and refresh the vendor pin (one feature per
-      upstream bump; expected no-op while `main` is `cb897cb`)
-- [ ] Vendor/port `clipperhouse/displaywidth` tables for exact width parity
-      (only if exact Go table parity becomes a hard requirement)
-- [ ] Add a CI matrix for the supported Crystal versions
+- [x] OSC 7501 Program Status Protocol from `ansi/v0.11.9`
+- [x] `cb897cb` refresh: Wcwidth per codepoint, Kitty `Quiet`, and dependency
+      audit
+- [x] Quality gates: build target and GitHub Actions CI
+- [ ] Re-audit upstream `main` and port any new behavior as one feature
+      (expected no-op while `main` is `cb897cb`)
+- [ ] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
+      (only if required)
+- [ ] Harden CI with a supported-Crystal-version matrix and dependency caching
 
 ## Intentional divergences
 
