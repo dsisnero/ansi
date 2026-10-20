@@ -63,6 +63,9 @@ describe "Ansi width helpers" do
       {"bubbles emoji", "\u{1FAE7}", 2, 2},
       {"standalone enclosing keycap", "\u20e3", 0, 0},
       {"standalone VS16", "\uFE0F", 0, 0},
+      {"new arabic mark", "\u{0897}", 1, 0},
+      {"new combining mark", "\u{1ACF}", 1, 0},
+      {"musical symbol stem", "\u{1D165}", 1, 0},
     ]
 
     cases.each do |name, input, grapheme, wcwidth|

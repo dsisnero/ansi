@@ -17,13 +17,12 @@ micro-commits.
   1. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
      coherent feature. This is expected to be a no-op while `main` remains
      `cb897cb`.
-  2. Port/vendor `clipperhouse/displaywidth` tables as one feature if exact
-     width parity becomes a requirement.
-  3. Extend differential characterization coverage as upstream dependency
+  2. Extend differential characterization coverage as upstream dependency
      tables advance.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
-  - Width measurement: ported with Unicode 17 tables plus targeted fallbacks.
+  - Width measurement: ported; GraphemeWidth uses vendored displaywidth v0.11.0
+    tables and WcWidth uses Unicode 17 tables plus targeted fallbacks.
   - Colors and conversions: ported.
   - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -34,20 +33,21 @@ micro-commits.
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
   - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
     (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
-  - Width uses `unicode_width` (Unicode 17) for wide-rune classification and
-    `uniwidth` for combining-mark and East Asian Ambiguous handling.
-    Single-codepoint differential vs Go over U+0000..U+1FFFF is 84 grapheme
-    mismatches and 1 wcwidth mismatch out of 129,024; most leftovers are newer
-    combining marks where this port has newer Unicode data.
+  - GraphemeWidth uses the vendored `displaywidth` v0.11.0 property tables;
+    WcWidth uses `unicode_width` (Unicode 17) with `uniwidth` handling for
+    combining marks and East Asian Ambiguous characters. Single-codepoint
+    differential vs Go over U+0000..U+1FFFF is 0 grapheme mismatches and 1
+    wcwidth mismatch out of 129,024.
   - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
     cube boundaries.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last feature commit:** `505ff26` (port: sixel FromColor nil parity)
+- **Last feature commit:** `ab9d429` (ci: add Crystal version matrix and
+  dependency caching)
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (462 examples).
+  (465 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -81,8 +81,7 @@ micro-commits.
 - [x] Quality gates: build target and GitHub Actions CI
 - [ ] Re-audit upstream `main` and port any new behavior as one feature
       (expected no-op while `main` is `cb897cb`)
-- [ ] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
-      (only if required)
+- [x] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
 - [x] CI hardening: supported-Crystal-version matrix and dependency caching
 
 ## Intentional divergences
@@ -92,6 +91,6 @@ micro-commits.
   idioms.
 - The Go-compatible `set_program_status` writer delegates to the idiomatic
   `program_status=` writer.
-- `GraphemeWidth` carries a targeted UAX #29 GB9c merge for major Indic viramas
-  and supplemental Unicode 17 width handling where Go's tables are older.
+- `GraphemeWidth` applies a targeted UAX #29 GB9c merge for major Indic
+  viramas; width classification comes from the vendored displaywidth tables.
   `WcWidth` follows Go's per-codepoint model.

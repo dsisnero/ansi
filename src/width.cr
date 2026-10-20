@@ -162,7 +162,7 @@ module Ansi
     end
 
     cluster_str = s.byte_slice(from, to - from)
-    width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : grapheme_cluster_width(cps)
+    width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : DisplayWidth.grapheme_width(cluster_str)
     {cluster_str, width}
   end
 
@@ -188,60 +188,12 @@ module Ansi
     end
 
     cluster_bytes = bytes[0, to]
-    width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : grapheme_cluster_width(cps)
+    width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
     {cluster_bytes, width}
   end
 
   private def self.grapheme_cluster_width(cluster : TextSegment::Grapheme::Cluster) : Int32
-    grapheme_cluster_width(cluster.codepoints)
-  end
-
-  private def self.grapheme_cluster_width(cps : Array(Int32)) : Int32
-    regional_count = cps.count { |codepoint| regional_indicator?(codepoint) }
-    return ((regional_count + 1) // 2) * 2 if regional_count > 0
-    return 2 if emoji_presentation?(cps)
-
-    cps.each do |codepoint|
-      next if codepoint < 0x20 || (codepoint >= 0x7f && codepoint <= 0x9f)
-      next if Unicode.zero_width?(codepoint)
-      next if legacy_zero_width?(codepoint)
-
-      width = UnicodeWidth.width(codepoint.chr)
-      return width > 0 ? width : 1
-    end
-    0
-  end
-
-  private def self.emoji_presentation?(cps : Array(Int32)) : Bool
-    return true if cps.size > 1 && cps.includes?(0x20e3) # enclosing keycap
-    return true if cps.size > 1 && cps.includes?(0xfe0f) # VS16 emoji presentation
-    return true if cps.any? { |codepoint| codepoint >= 0xe0020 && codepoint <= 0xe007f }
-    cps.includes?(0x200d) && cps.any? { |codepoint| emoji_codepoint?(codepoint) }
-  end
-
-  private def self.regional_indicator?(codepoint : Int32) : Bool
-    codepoint >= 0x1f1e6 && codepoint <= 0x1f1ff
-  end
-
-  private def self.emoji_codepoint?(codepoint : Int32) : Bool
-    table = UnicodeCharWidth.emoji_table
-    return false if table.empty?
-    return false if codepoint < table[0].first
-
-    bot = 0
-    top = table.size - 1
-    while top >= bot
-      mid = (bot + top) >> 1
-      range = table[mid]
-      if range[1] < codepoint
-        bot = mid + 1
-      elsif range[0] > codepoint
-        top = mid - 1
-      else
-        return true
-      end
-    end
-    false
+    DisplayWidth.grapheme_width(cluster.str)
   end
 
   private def self.bytes_contains_any(bytes : Bytes, breakpoints : String) : Bool
@@ -258,11 +210,5 @@ module Ansi
       return true if char == r
     end
     false
-  end
-end
-
-module UnicodeCharWidth
-  def self.emoji_table
-    emoji
   end
 end
