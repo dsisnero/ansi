@@ -251,6 +251,46 @@ describe Ansi::Sixel do
       color.b.should eq 0xFF_u8
       color.a.should eq 0xFF_u8
     end
+
+    it "dark gray rounds like Go" do
+      color = Ansi::Sixel.sixel_hls(0, 5, 0)
+      color.r.should eq 12_u8
+      color.g.should eq 12_u8
+      color.b.should eq 12_u8
+      color.a.should eq 0xFF_u8
+    end
+
+    it "dark red rounds like Go" do
+      color = Ansi::Sixel.sixel_hls(0, 5, 15)
+      color.r.should eq 14_u8
+      color.g.should eq 10_u8
+      color.b.should eq 10_u8
+      color.a.should eq 0xFF_u8
+    end
+
+    it "10% gray rounds like Go" do
+      color = Ansi::Sixel.sixel_hls(0, 10, 0)
+      color.r.should eq 25_u8
+      color.g.should eq 25_u8
+      color.b.should eq 25_u8
+      color.a.should eq 0xFF_u8
+    end
+
+    it "medium green rounds like Go" do
+      color = Ansi::Sixel.sixel_hls(120, 50, 50)
+      color.r.should eq 64_u8
+      color.g.should eq 191_u8
+      color.b.should eq 64_u8
+      color.a.should eq 0xFF_u8
+    end
+
+    it "matches Go's fused rounding edge case" do
+      color = Ansi::Sixel.sixel_hls(130, 70, 100)
+      color.r.should eq 102_u8
+      color.g.should eq 255_u8
+      color.b.should eq 127_u8
+      color.a.should eq 0xFF_u8
+    end
   end
 
   describe "DecodeRaster (from Go TestDecodeRaster)" do

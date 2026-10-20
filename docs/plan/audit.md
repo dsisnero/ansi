@@ -363,6 +363,7 @@
   - Crystal: `src/sixel.cr`
 ### Methods
 - `Color.RGBA` [x] (Crystal: `#rgba`)
+- `sixelHLS` [x] (Crystal: `Ansi::Sixel.sixel_hls`)
 
 ## sixel/color_test.go
 (no structs or methods)

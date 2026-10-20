@@ -6,18 +6,14 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** finish
-  [`plans/upstream-refresh-cb897cb.md`](upstream-refresh-cb897cb.md). Wcwidth
-  per codepoint and the Kitty `Quiet` rename are complete; the dependency audit
-  is next.
+- **Current focus:** port the remaining Sixel parity work. The upstream refresh
+  is complete: Wcwidth, Kitty `Quiet`, the dependency audit, and Sixel HSL
+  accuracy are done.
 - **Next up:**
-  1. Audit Crystal width dependencies against the upstream `go.mod` bumps and
-     record any intentional shard-version divergences.
-  2. Fix HSL conversion accuracy in Sixel so pure colors match Go.
-  3. Add the missing Sixel palette quantization tests.
-  4. Port the remaining color tests and extend `Color` functionality.
-  5. Implement the remaining Sixel decoder behavior and `FullImage` tests.
-  6. Re-audit `x/ansi` against the next newer upstream tag and add missing
+  1. Add the missing Sixel palette quantization tests.
+  2. Port the remaining color tests and extend `Color` functionality.
+  3. Implement the remaining Sixel decoder behavior and `FullImage` tests.
+  4. Re-audit `x/ansi` against the next newer upstream tag and add missing
      behavior.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
@@ -27,19 +23,25 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     `GraphemeWidth` matches the refreshed Go tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
-  - Sixel: in progress — decoder and palette quantization have gaps.
+  - Sixel: HSL conversion now matches Go; decoder and palette quantization
+    still have gaps.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
   - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
     (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
+  - Crystal `uniwidth`/`uni_text_seg` are already at their latest tags
+    (0.1.3), which lag Go's `displaywidth`/`uax29`; the width fallbacks and
+    GB9c virama merge stay in-repo until those shards update.
+  - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
+    rounding, not the Crystal `colorful` shard.
   - `sixel/palette_test.go` and `parser_test.go` contain Go test-only helper
     structs that are not API surface; the audit marks them unchecked.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `e661202` (port: kitty Quiet option)
-- **Gates:** `make lint` pass; `make test` pass (407 examples).
+- **Gates:** `make lint` pass; `make test` pass (412 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
@@ -55,14 +57,14 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 - [x] iTerm2 file and inline image support
 - [ ] Sixel decoder functionality and `FullImage` tests
 - [ ] Sixel palette quantization tests
-- [ ] Sixel HSL conversion accuracy
+- [x] Sixel HSL conversion accuracy
 
 ## Phase 3 — Newer upstream features
 
 - [x] Program Status Protocol (OSC 7501) from `ansi/v0.11.9`
 - [x] Port Wcwidth per codepoint from the `cb897cb` refresh
 - [x] Port the Kitty `Quiet` option rename from the `cb897cb` refresh
-- [ ] Audit width dependencies against the refreshed upstream `go.mod`
+- [x] Audit width dependencies against the refreshed upstream `go.mod`
 - [ ] Re-audit `x/ansi` against the next newer upstream tag and add missing
       behavior
 

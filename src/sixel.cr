@@ -247,38 +247,61 @@ module Ansi
     end
 
     def self.sixel_hls(h : Int32, l : Int32, s : Int32) : Ansi::Color
-      # Use Colorful library for HSL to RGB conversion (matches Go's colorful.Hsl)
       hue = h.to_f64
-      saturation = s.to_f64 / 100.0
       lightness = l.to_f64 / 100.0
-      colorful_color = Colorful::Color.hsl(hue, saturation, lightness).clamped
-      # Handle floating point precision errors by rounding with tolerance
-      # Values very close to 0 should be 0, values very close to 1 should be 1
-      r_f = colorful_color.r
-      g_f = colorful_color.g
-      b_f = colorful_color.b
+      saturation = s.to_f64 / 100.0
 
-      # Tolerance for floating point errors in HSL conversion
-      tolerance = 0.004
+      if saturation == 0.0
+        gray = hsl_channel(lightness)
+        return Ansi::Color.new(gray, gray, gray, 0xFF_u8)
+      end
 
-      # Adjust values very close to 0 or 1
-      r_f = 0.0 if r_f.abs < tolerance
-      g_f = 0.0 if g_f.abs < tolerance
-      b_f = 0.0 if b_f.abs < tolerance
-      r_f = 1.0 if (r_f - 1.0).abs < tolerance
-      g_f = 1.0 if (g_f - 1.0).abs < tolerance
-      b_f = 1.0 if (b_f - 1.0).abs < tolerance
+      t1 = if lightness < 0.5
+             lightness * (1.0 + saturation)
+           else
+             lightness + saturation - lightness * saturation
+           end
+      t2 = 2.0 * lightness - t1
 
-      # Clamp to valid range
-      r_f = r_f.clamp(0.0, 1.0)
-      g_f = g_f.clamp(0.0, 1.0)
-      b_f = b_f.clamp(0.0, 1.0)
+      hue /= 360.0
+      tr = hue + 1.0 / 3.0
+      tg = hue
+      tb = hue - 1.0 / 3.0
 
-      # Convert from Float64 0-1 to UInt8 0-255
-      r = (r_f * 255.0 + 0.5).to_i.clamp(0, 255)
-      g = (g_f * 255.0 + 0.5).to_i.clamp(0, 255)
-      b = (b_f * 255.0 + 0.5).to_i.clamp(0, 255)
-      Ansi::Color.new(r.to_u8, g.to_u8, b.to_u8, 0xFF_u8)
+      tr += 1.0 if tr < 0.0
+      tr -= 1.0 if tr > 1.0
+      tg += 1.0 if tg < 0.0
+      tg -= 1.0 if tg > 1.0
+      tb += 1.0 if tb < 0.0
+      tb -= 1.0 if tb > 1.0
+
+      Ansi::Color.new(
+        hsl_channel(hsl_hue_channel(tr, t1, t2)),
+        hsl_channel(hsl_hue_channel(tg, t1, t2)),
+        hsl_channel(hsl_hue_channel(tb, t1, t2)),
+        0xFF_u8
+      )
+    end
+
+    # Ports the channel selection from Go's colorful.Hsl so the sixel HLS
+    # conversion matches the upstream implementation.
+    private def self.hsl_hue_channel(v : Float64, t1 : Float64, t2 : Float64) : Float64
+      if 6.0 * v < 1.0
+        Math.fma((t1 - t2) * 6.0, v, t2)
+      elsif 2.0 * v < 1.0
+        t1
+      elsif 3.0 * v < 2.0
+        t2 + (t1 - t2) * (2.0 / 3.0 - v) * 6.0
+      else
+        t2
+      end
+    end
+
+    # Matches Go's color.RGBA conversion at 16 bits, then truncates to the
+    # 8-bit channel range used by the Crystal Color type.
+    private def self.hsl_channel(v : Float64) : UInt8
+      v = v.clamp(0.0, 1.0)
+      ((v * 65535.0 + 0.5).to_u32 >> 8).to_u8
     end
 
     def self.convert_channel(c16 : UInt32) : UInt32

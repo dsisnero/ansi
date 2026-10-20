@@ -147,27 +147,30 @@ lucasb-eyer/go-colorful     1.4.1
 mattn/go-runewidth          0.0.27
 ```
 
-- [ ] Audit Crystal equivalents: `uniwidth` (runewidth tables) and
+- [x] Audit Crystal equivalents: `uniwidth` (runewidth tables) and
   `uni_text_seg` (uax29 graphemes), plus `colorful`, at their pinned versions.
-- [ ] Check whether a newer `uniwidth`/`uni_text_seg` release is needed for the
-  width cases added in Phase 1.
-- [ ] If `shard.yml` changes, run `shards update`, then re-run the width
-  differential. Record any intentional shard-version divergence in
-  `plans/parity.md`.
-- [ ] No direct port of `go.mod`/`go.sum`; only behavior-affecting differences
+- [x] Check whether a newer `uniwidth`/`uni_text_seg` release is needed for the
+  width cases added in Phase 1: both are already at their latest tags (0.1.3),
+  so no shard bump is available.
+- [x] No `shard.yml` change; the width gaps are covered by the in-repo virama
+  merge and emoji fallback documented in `plans/parity.md`.
+- [x] No direct port of `go.mod`/`go.sum`; only behavior-affecting differences
   matter.
+
+Phase 3 is complete. `uniwidth`/`uni_text_seg` lag Go's refreshed
+`displaywidth`/`uax29`, and the Sixel HLS path now uses a native Go-compatible
+implementation instead of the Crystal `colorful` shard.
 
 ## Phase 4 — Confirm no-op and already-ported files
 
-- [ ] `ansi/programstatus.go` and `ansi/programstatus_test.go`: already ported
-  in `e5a6c9b`; run `spec/program_status_spec.cr` and diff the upstream tests
-  again to confirm no newer changes.
-- [ ] Lint-only changes: `ansi/color.go`, `ansi/mouse.go`,
+- [x] `ansi/programstatus.go` and `ansi/programstatus_test.go`: already ported
+  in `e5a6c9b`; `spec/program_status_spec.cr` passes against the refreshed
+  source.
+- [x] Lint-only changes: `ansi/color.go`, `ansi/mouse.go`,
   `ansi/parser/transition_table.go`, `ansi/sixel/encoder.go`,
   `ansi/sixel/palette.go`, `ansi/sixel/palette_sort.go`, and the remaining
-  `//nolint` edits in `ansi/parser_decode.go`. These should require no Crystal
-  behavior change; verify by reading the diff and keep a note in the feature
-  commit.
+  `//nolint` edits in `ansi/parser_decode.go` contain no Crystal behavior
+  changes.
 
 ## Verification and signoff
 
