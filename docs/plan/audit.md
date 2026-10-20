@@ -506,9 +506,18 @@
 (no structs or methods)
 
 ## width.go
-(no structs or methods)
+(no structs or methods; `stringWidth` now measures WcWidth per codepoint)
 
 ## width_test.go
+(no structs or methods)
+
+## wcwidth.go
+### Methods
+- `wcRuneWidth` [x] (Crystal: `Ansi.wc_rune_width`)
+- `wcClusterWidth` [x] (Crystal: `Ansi.wc_cluster_width`)
+- `isZeroWidthHigh` [x] (Crystal: `Unicode.zero_width?` binary search)
+
+## wcwidth_test.go
 (no structs or methods)
 
 ## winop.go

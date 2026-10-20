@@ -6,24 +6,22 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** execute
-  [`plans/upstream-refresh-cb897cb.md`](upstream-refresh-cb897cb.md) — port the
-  `ansi/` changes between `eeb2896` and the new `cb897cb` vendor pin.
+- **Current focus:** continue
+  [`plans/upstream-refresh-cb897cb.md`](upstream-refresh-cb897cb.md). Wcwidth
+  per codepoint is complete; the Kitty `Quiet` rename is next.
 - **Next up:**
-  1. Port Wcwidth per codepoint (`wcwidth.go`, `width.go`,
-     `parser_decode.go`, plus `wcwidth_test.go`, `method_test.go`,
-     `width_test.go`).
-  2. Port the Kitty `Quiet` option rename while keeping deprecated `Quite`.
-  3. Audit Crystal width dependencies against the upstream `go.mod` bumps.
-  4. Fix HSL conversion accuracy in Sixel so pure colors match Go.
-  5. Add the missing Sixel palette quantization tests.
-  6. Port the remaining color tests and extend `Color` functionality.
-  7. Implement the remaining Sixel decoder behavior and `FullImage` tests.
+  1. Port the Kitty `Quiet` option rename while keeping deprecated `Quite`.
+  2. Audit Crystal width dependencies against the upstream `go.mod` bumps.
+  3. Fix HSL conversion accuracy in Sixel so pure colors match Go.
+  4. Add the missing Sixel palette quantization tests.
+  5. Port the remaining color tests and extend `Color` functionality.
+  6. Implement the remaining Sixel decoder behavior and `FullImage` tests.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
   - Parser, transitions, decode helpers, handlers: ported.
-  - Width measurement: needs the per-codepoint WcWidth model from the refresh.
+  - Width measurement: ported — `WcWidth` now sums per-codepoint widths;
+    `GraphemeWidth` matches the refreshed Go tests.
   - Kitty and iTerm2 graphics: ported; Kitty `Quiet` rename pending.
   - Sixel: in progress — decoder and palette quantization have gaps.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -36,8 +34,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     structs that are not API surface; the audit marks them unchecked.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `aa47d48` (scaffold resumable agent docs and parity plan)
-- **Gates:** `make lint` pass; `make test` pass (338 examples).
+- **Last commit:** `f604e33` (vendor bump and upstream refresh plan)
+- **Gates:** `make lint` pass; `make test` pass (405 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
@@ -58,7 +56,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 ## Phase 3 — Newer upstream features
 
 - [x] Program Status Protocol (OSC 7501) from `ansi/v0.11.9`
-- [ ] Port Wcwidth per codepoint from the `cb897cb` refresh
+- [x] Port Wcwidth per codepoint from the `cb897cb` refresh
 - [ ] Port the Kitty `Quiet` option rename from the `cb897cb` refresh
 - [ ] Audit width dependencies against the refreshed upstream `go.mod`
 - [ ] Re-audit `x/ansi` against the next newer upstream tag and add missing
@@ -73,3 +71,6 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   idioms.
 - The Go-compatible `set_program_status` writer delegates to the idiomatic
   `program_status=` writer.
+- `GraphemeWidth` carries a targeted UAX #29 GB9c merge for major Indic viramas
+  and a supplemental wide-emoji fallback because the Crystal width shards lag
+  Go's `displaywidth` tables. `WcWidth` follows Go's per-codepoint model.

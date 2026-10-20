@@ -11,8 +11,8 @@ WIDTH_CASES = [
   {name: "osc", input: "\x9d2;charmbracelet: ~/Source/bubbletea\x9c", stripped: "", width: 0, wcwidth: 0},
   {name: "controlemoji", input: "\x1b[31m👋\x1b[0m", stripped: "👋", width: 2, wcwidth: 2},
   {name: "oscwideemoji", input: "\x1b]2;title👨‍👩‍👦\x07", stripped: "", width: 0, wcwidth: 0},
-  {name: "oscwideemoji", input: "\x1b[31m👨‍👩‍👦\x1b[m", stripped: "👨\u200d👩\u200d👦", width: 2, wcwidth: 2},
-  {name: "multiemojicsi", input: "👨‍👩‍👦\x9b38;5;1mhello\x9bm", stripped: "👨‍👩‍👦hello", width: 7, wcwidth: 7},
+  {name: "oscwideemoji", input: "\x1b[31m👨‍👩‍👦\x1b[m", stripped: "👨\u200d👩\u200d👦", width: 2, wcwidth: 6},
+  {name: "multiemojicsi", input: "👨‍👩‍👦\x9b38;5;1mhello\x9bm", stripped: "👨‍👩‍👦hello", width: 7, wcwidth: 11},
   {name: "osc8eastasianlink", input: "\x9d8;id=1;https://example.com/\x9c打豆豆\x9d8;id=1;\x07", stripped: "打豆豆", width: 6, wcwidth: 6},
   {name: "dcsarabic", input: "\x1bP?123$pسلام\x1b\\اهلا", stripped: "اهلا", width: 4, wcwidth: 4},
   {name: "newline", input: "hello\nworld", stripped: "hello\nworld", width: 10, wcwidth: 10},
@@ -23,7 +23,10 @@ WIDTH_CASES = [
   {name: "just_unicode", input: "Claire’s Boutique", stripped: "Claire’s Boutique", width: 17, wcwidth: 17},
   {name: "unclosed_ansi", input: "Hey, \x1b[7m\n猴", stripped: "Hey, \n猴", width: 7, wcwidth: 7},
   {name: "double_asian_runes", input: " 你\x1b[8m好.", stripped: " 你好.", width: 6, wcwidth: 6},
-  {name: "flag", input: "🇸🇦", stripped: "🇸🇦", width: 2, wcwidth: 1},
+  {name: "flag", input: "🇸🇦", stripped: "🇸🇦", width: 2, wcwidth: 2},
+  # The halfwidth voiced sound mark is Extend, so it joins the cluster before
+  # it, but it's a spacing character that advances the cursor.
+  {name: "half width and ascii", input: "(ﾟ", stripped: "(ﾟ", width: 1, wcwidth: 2},
 ]
 
 describe "Ansi width helpers" do

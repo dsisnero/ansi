@@ -62,7 +62,18 @@ module Ansi
 
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
-      if state == ParserTransition::Utf8State
+      if action == ParserTransition::PrintAction || state == ParserTransition::Utf8State
+        if m == Method::WcWidth
+          # Wcwidth sums codepoints, so where the cluster boundaries fall
+          # makes no difference to the total. Skipping the segmentation is a
+          # good deal cheaper.
+          char, size = decode_rune(s, i)
+          width += wc_rune_width(char.ord)
+          i += size
+          pstate = ParserTransition::GroundState
+          next
+        end
+
         cluster_bytes, w = first_grapheme_cluster(bytes[i, bytes.size - i], m)
         width += w
         advance = cluster_bytes.size
@@ -78,6 +89,13 @@ module Ansi
     end
 
     width
+  end
+
+  private def self.decode_rune(s : String, byte_index : Int32) : {Char, Int32}
+    reader = Char::Reader.new(s, byte_index)
+    char = reader.current_char
+    reader.next_char
+    {char, reader.pos - byte_index}
   end
 
   private def self.utf8_byte_len(b : UInt8) : Int32
@@ -106,47 +124,87 @@ module Ansi
     nil
   end
 
+  # UAX #29 GB9c conjunct clusters for the major Indic scripts. The text
+  # segmentation shard does not merge a consonant + virama with the following
+  # consonant, so merge them here.
+  private INDIC_VIRAMAS = [
+    0x094d, # Devanagari
+    0x09cd, # Bengali
+    0x0a4d, # Gurmukhi
+    0x0acd, # Gujarati
+    0x0b4d, # Oriya
+    0x0bcd, # Tamil
+    0x0c4d, # Telugu
+    0x0ccd, # Kannada
+    0x0d4d, # Malayalam
+    0x0dca, # Sinhala
+  ] of Int32
+
   private def self.first_grapheme_cluster(s : String, m : Method) : {String, Int32}
     return {"", 0} if s.empty?
 
-    cluster = TextSegment.graphemes(s).first?
-    return {"", 0} unless cluster
+    clusters = TextSegment.graphemes(s)
+    return {"", 0} if clusters.empty?
 
+    index = 0
+    cluster = clusters[index]
     from, to = cluster.positions
+    cps = cluster.codepoints
+    last = cps.last?
+    while last && INDIC_VIRAMAS.includes?(last) && index + 1 < clusters.size
+      index += 1
+      following = clusters[index]
+      _following_from, following_to = following.positions
+      to = following_to
+      cps = following.codepoints
+      last = cps.last?
+    end
+
     cluster_str = s.byte_slice(from, to - from)
-    {cluster_str, cluster_width(cluster, m)}
+    width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : grapheme_cluster_width(cps)
+    {cluster_str, width}
   end
 
   private def self.first_grapheme_cluster(bytes : Bytes, m : Method) : {Bytes, Int32}
     str = bytes_to_string(bytes)
     return {Bytes.empty, 0} if str.empty?
 
-    cluster = TextSegment.graphemes(str).first?
-    return {Bytes.empty, 0} unless cluster
+    clusters = TextSegment.graphemes(str)
+    return {Bytes.empty, 0} if clusters.empty?
 
+    index = 0
+    cluster = clusters[index]
     _from, to = cluster.positions
-    {bytes[0, to], cluster_width(cluster, m)}
-  end
-
-  private def self.cluster_width(cluster : TextSegment::Grapheme::Cluster, m : Method) : Int32
-    case m
-    when Method::WcWidth
-      width = UnicodeCharWidth.width(cluster.str).to_i
-      return width if width != 1
-      cps = cluster.codepoints
-      return 1 if regional_indicator_sequence?(cps)
-      return 2 if emoji_sequence?(cps)
-      width
-    else
-      grapheme_cluster_width(cluster)
+    cps = cluster.codepoints
+    last = cps.last?
+    while last && INDIC_VIRAMAS.includes?(last) && index + 1 < clusters.size
+      index += 1
+      following = clusters[index]
+      _following_from, following_to = following.positions
+      to = following_to
+      cps = following.codepoints
+      last = cps.last?
     end
+
+    cluster_bytes = bytes[0, to]
+    width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : grapheme_cluster_width(cps)
+    {cluster_bytes, width}
   end
 
   private def self.grapheme_cluster_width(cluster : TextSegment::Grapheme::Cluster) : Int32
-    cps = cluster.codepoints
+    grapheme_cluster_width(cluster.codepoints)
+  end
+
+  private def self.grapheme_cluster_width(cps : Array(Int32)) : Int32
+    return 2 if cps.includes?(0x20e3)
     return 2 if regional_indicator_sequence?(cps)
-    return 2 if emoji_sequence?(cps)
-    UnicodeCharWidth.width(cluster.str).to_i
+    return 2 if emoji_sequence?(cps) && !cps.includes?(0xfe0e)
+
+    cps.each do |codepoint|
+      width = UnicodeCharWidth.width(codepoint)
+      return width if width > 0
+    end
+    0
   end
 
   private def self.regional_indicator_sequence?(cps : Array(Int32)) : Bool

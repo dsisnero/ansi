@@ -68,35 +68,34 @@ and the one most likely to affect existing output.
 
 ### Implementation
 
-- [ ] Add `src/wcwidth.cr` porting `x/ansi/wcwidth.go`:
+- [x] Add `src/wcwidth.cr` porting `x/ansi/wcwidth.go`:
   - zero-width categories `Mn`, `Me`, `Cf` (combining marks, enclosing marks,
-    ZWJ, variation selectors, tag characters);
+    ZWJ, variation selectors, tag characters) using Crystal's Unicode tables;
   - `wc_rune_width(r)`: C0/C1 and DEL are 0, printable ASCII is 1, zero-width
     tables win over the width shard, everything else falls back to
     `UnicodeCharWidth.width`;
   - `wc_cluster_width(cluster)`: sum `wc_rune_width` over codepoints, for both
     `String` and `Bytes`.
-- [ ] Update `src/width.cr`:
+- [x] Update `src/width.cr`:
   - For `Method::WcWidth`, decode one rune at a time in `string_width` and add
     `wc_rune_width`; do not run grapheme segmentation.
   - In `first_grapheme_cluster`, make the `WcWidth` branch use
-    `wc_cluster_width` instead of `UnicodeCharWidth.width(cluster.str)`.
-  - Keep the current grapheme-aware behavior for `Method::GraphemeWidth`.
-  - Remove or narrow the WcWidth-only regional-indicator/emoji overrides that
-    are no longer needed after the per-codepoint switch.
-- [ ] Update `src/parser_decode.cr`'s `FirstGraphemeCluster` equivalent to use
-  the new `WcWidth` cluster width.
+    `wc_cluster_width`.
+  - Keep the grapheme-aware behavior for `Method::GraphemeWidth`, refined to
+    match the refreshed Go method tests.
+  - Remove the WcWidth-only regional-indicator/emoji overrides.
+- [x] Keep `src/parser_decode.cr` on the shared `first_grapheme_cluster` helper;
+  no direct edit was needed after the cluster-width update.
 
 ### Tests
 
-- [ ] Add `spec/wcwidth_spec.cr` porting `ansi/wcwidth_test.go`:
-  `TestWcClusterWidth`, `TestWcRuneWidth`, `TestWcRuneWidthEastAsian`, and
-  `TestIsZeroWidthHigh`. Keep the full high-plane cross-check or document a
-  sampled equivalent if runtime is prohibitive.
-- [ ] Add `spec/method_spec.cr` porting `ansi/method_test.go`
+- [x] Add `spec/wcwidth_spec.cr` porting `ansi/wcwidth_test.go`:
+  `TestWcClusterWidth`, `TestWcRuneWidth`, `TestWcRuneWidthEastAsian`, and a
+  sampled equivalent of `TestIsZeroWidthHigh`.
+- [x] Add `spec/method_spec.cr` porting `ansi/method_test.go`
   (`TestMethod_StringWidth`): WcWidth vs GraphemeWidth for ASCII, wide chars,
   emoji, ZWJ families, skin tones, combining marks, and VS16.
-- [ ] Update `spec/width_spec.cr` to the new expectations:
+- [x] Update `spec/width_spec.cr` to the new expectations:
   - ZWJ family: `wcwidth` 2 → 6
   - emoji + `hello`: `wcwidth` 7 → 11
   - flag `🇸🇦`: `wcwidth` 1 → 2
@@ -105,8 +104,14 @@ and the one most likely to affect existing output.
 ### Acceptance
 
 - Crystal output matches the Go table for every case above.
-- `Ansi.string_width` (grapheme default) is unchanged for existing cases.
-- `make test` passes.
+- `Ansi.string_width` (grapheme default) is unchanged for existing cases and
+  now also matches the new upstream method tests.
+- `make test` passes (405 examples).
+
+Phase 1 is complete. `GraphemeWidth` needed two supporting refinements to keep
+the new upstream tests green: a targeted UAX #29 GB9c merge for major Indic
+viramas, and VS15/keycap/emoji handling that matches the refreshed
+`displaywidth` results. The remaining dependency audit stays in Phase 3.
 
 ## Phase 2 — Kitty `Quiet` option rename (behavioral)
 
