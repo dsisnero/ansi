@@ -7,6 +7,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        crystal: ["1.19.1", "latest"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -14,7 +18,17 @@ jobs:
 
       - uses: crystal-lang/install-crystal@v1
         with:
-          crystal: 1.22.0
+          crystal: ${{ matrix.crystal }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib
+            ~/.cache/shards
+          key: ${{ runner.os }}-crystal-${{ matrix.crystal }}-${{ hashFiles('shard.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-crystal-${{ matrix.crystal }}-
 
       - name: Install dependencies
         run: shards install

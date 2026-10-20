@@ -19,14 +19,16 @@ micro-commits.
      `cb897cb`.
   2. Port/vendor `clipperhouse/displaywidth` tables as one feature if exact
      width parity becomes a requirement.
-  3. Harden CI as one feature: Crystal version matrix plus dependency caching.
+  3. Extend differential characterization coverage as upstream dependency
+     tables advance.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
   - Width measurement: ported with Unicode 17 tables plus targeted fallbacks.
   - Colors and conversions: ported.
   - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
-  - Quality gates: build, format, lint, and test run locally and in CI.
+  - Quality gates: build, format, lint, and test run locally and in CI across
+    the minimum supported Crystal (1.19.1) and latest, with cached dependencies.
 - **Scoping notes / gotchas:**
   - The vendored submodule is pinned at `cb897cb` (2026-10-18). The refresh
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
@@ -45,7 +47,7 @@ micro-commits.
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last feature commit:** `505ff26` (port: sixel FromColor nil parity)
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (460 examples).
+  (462 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -81,7 +83,7 @@ micro-commits.
       (expected no-op while `main` is `cb897cb`)
 - [ ] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
       (only if required)
-- [ ] Harden CI with a supported-Crystal-version matrix and dependency caching
+- [x] CI hardening: supported-Crystal-version matrix and dependency caching
 
 ## Intentional divergences
 

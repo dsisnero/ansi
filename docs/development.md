@@ -61,6 +61,9 @@ Record the tag or commit used for the feature in the plan and commit message.
 6. Commit one feature atomically using the `port: ...` convention from
    `AGENTS.md`.
 
+CI runs the same gates on Crystal `1.19.1` and `latest`, with cached
+dependencies.
+
 ## Temporary files
 
 Use `./temp` for scratch files. `make clean` removes its contents and any
