@@ -118,18 +118,22 @@ viramas, and VS15/keycap/emoji handling that matches the refreshed
 Upstream commit: `72ac425`. The Go API adds `Quiet`, deprecates the misspelled
 `Quite`, and gives the deprecated field precedence when non-zero.
 
-- [ ] In `src/kitty.cr` `Options`, add `property quiet : UInt8` and keep
+- [x] In `src/kitty.cr` `Options`, add `property quiet : UInt8` and keep
   `property quite : UInt8` as deprecated.
-- [ ] In `Options#options`, emit `q=` from `quiet`, overridden by `quite` only
+- [x] In `Options#options`, emit `q=` from `quiet`, overridden by `quite` only
   when `quite > 0`.
-- [ ] Apply the same precedence in `build_chunk_options` for continuation
+- [x] Apply the same precedence in `build_chunk_options` for continuation
   chunks.
-- [ ] `Options.from_text`/unmarshal: `q=` populates `quiet` only, leaving the
+- [x] `Options.from_text`/unmarshal: `q=` populates `quiet` only, leaving the
   deprecated `quite` at zero.
-- [ ] Port the new test table from `ansi/kitty/options_test.go` to
+- [x] Port the new test table from `ansi/kitty/options_test.go` to
   `spec/kitty_options_spec.cr` (Quiet-only, Quite-only, Quite overrides Quiet,
   `Quite=0`, both zero) and update existing fixtures to use `quiet`.
-- [ ] Verify `spec/kitty_writer_spec.cr` still passes for chunked output.
+- [x] Verify `spec/kitty_writer_spec.cr` still passes for chunked output and
+  add a continuation-chunk precedence test.
+
+Phase 2 is complete. The deprecated `quite` field still works and overrides
+`quiet` when non-zero; `q=` unmarshalling populates `quiet` only.
 
 ## Phase 3 — Dependencies and width behavior
 

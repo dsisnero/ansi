@@ -161,6 +161,26 @@ describe "Ansi::Kitty.encode_graphics" do
     end
   end
 
+  it "uses the deprecated quite field for chunked options" do
+    image = build_large_image
+    options = Ansi::Kitty::Options.new
+    options.transmission = Ansi::Kitty::Direct
+    options.format = Ansi::Kitty::RGB
+    options.chunk = true
+    options.quiet = 1_u8
+    options.quite = 2_u8
+
+    io = IO::Memory.new
+    Ansi::Kitty.encode_graphics(io, image, options)
+
+    chunks = io.to_s.split("\e\\")
+    chunks.pop
+    chunks.size.should be >= 2
+    chunks.each do |chunk|
+      chunk.includes?("q=2").should be_true
+    end
+  end
+
   it "handles edge cases" do
     tests = [
       {

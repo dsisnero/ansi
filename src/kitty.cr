@@ -52,6 +52,11 @@ module Ansi
 
     struct Options
       property action : UInt8
+      # The kitty graphics quiet mode. Zero is the default, 1 suppresses OK
+      # responses, and 2 suppresses both OK and error responses.
+      property quiet : UInt8
+      # Deprecated: misspelled field, use [quiet] instead. Any non-zero
+      # `quite` overrides `quiet`.
       property quite : UInt8
       property id : Int32
       property placement_id : Int32
@@ -84,6 +89,7 @@ module Ansi
 
       def initialize
         @action = 0_u8
+        @quiet = 0_u8
         @quite = 0_u8
         @id = 0
         @placement_id = 0
@@ -127,7 +133,9 @@ module Ansi
         end
 
         opts << "f=#{@format}" if @format != RGBA
-        opts << "q=#{@quite}" if @quite > 0
+        quiet = @quiet
+        quiet = @quite if @quite > 0
+        opts << "q=#{quiet}" if quiet > 0
         opts << "i=#{@id}" if @id > 0
         opts << "p=#{@placement_id}" if @placement_id > 0
         opts << "I=#{@number}" if @number > 0
@@ -203,7 +211,7 @@ module Ansi
             when "i"
               @id = v
             when "q"
-              @quite = v.to_u8
+              @quiet = v.to_u8
             when "p"
               @placement_id = v
             when "I"
@@ -426,7 +434,9 @@ module Ansi
       if is_first
         chunk_opts = opts.options
       else
-        chunk_opts << "q=#{opts.quite}" if opts.quite > 0
+        quiet = opts.quiet
+        quiet = opts.quite if opts.quite > 0
+        chunk_opts << "q=#{quiet}" if quiet > 0
         chunk_opts << "a=f" if opts.action == Frame
       end
 

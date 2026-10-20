@@ -101,7 +101,7 @@ describe "Ansi::Kitty::Options" do
         name:    "quiet mode and format",
         options: begin
           o = Ansi::Kitty::Options.new
-          o.quite = 2_u8
+          o.quiet = 2_u8
           o.format = Ansi::Kitty::RGB
           o
         end,
@@ -123,6 +123,59 @@ describe "Ansi::Kitty::Options" do
     tests.each do |test_case|
       got = test_case[:options].options
       sort_strings(got).should eq(sort_strings(test_case[:expected]))
+    end
+  end
+
+  it "supports the Quiet rename" do
+    tests = [
+      {
+        name:    "quiet only",
+        options: begin
+          o = Ansi::Kitty::Options.new
+          o.quiet = 1_u8
+          o
+        end,
+        want: ["q=1"],
+      },
+      {
+        name:    "deprecated quite only",
+        options: begin
+          o = Ansi::Kitty::Options.new
+          o.quite = 2_u8
+          o
+        end,
+        want: ["q=2"],
+      },
+      {
+        name:    "quite overrides quiet when non-zero",
+        options: begin
+          o = Ansi::Kitty::Options.new
+          o.quiet = 1_u8
+          o.quite = 2_u8
+          o
+        end,
+        want: ["q=2"],
+      },
+      {
+        name:    "quite=0 does not override quiet",
+        options: begin
+          o = Ansi::Kitty::Options.new
+          o.quiet = 1_u8
+          o.quite = 0_u8
+          o
+        end,
+        want: ["q=1"],
+      },
+      {
+        name:    "both zero emits no q option",
+        options: Ansi::Kitty::Options.new,
+        want:    [] of String,
+      },
+    ]
+
+    tests.each do |test_case|
+      got = test_case[:options].options
+      sort_strings(got).should eq(sort_strings(test_case[:want]))
     end
   end
 
@@ -176,7 +229,7 @@ describe "Ansi::Kitty::Options" do
         options: begin
           o = Ansi::Kitty::Options.new
           o.action = 'A'.ord.to_u8
-          o.quite = 'Q'.ord.to_u8
+          o.quiet = 'Q'.ord.to_u8
           o.compression = 'C'.ord.to_u8
           o.transmission = 'T'.ord.to_u8
           o.delete = 'd'.ord.to_u8
@@ -228,7 +281,7 @@ describe "Ansi::Kitty::Options" do
           o.id = 123
           o.width = 400
           o.height = 500
-          o.quite = 2_u8
+          o.quiet = 2_u8
           o.do_not_move_cursor = true
           o
         end,
@@ -264,6 +317,15 @@ describe "Ansi::Kitty::Options" do
         name: "unmarshal with invalid number",
         text: "i=abc".to_slice,
         want: Ansi::Kitty::Options.new,
+      },
+      {
+        name: "unmarshal q= populates Quiet only, not deprecated Quite",
+        text: "q=1".to_slice,
+        want: begin
+          o = Ansi::Kitty::Options.new
+          o.quiet = 1_u8
+          o
+        end,
       },
       {
         name: "unmarshal with delete resources",

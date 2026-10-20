@@ -141,7 +141,7 @@
 ## kitty/options.go
 ### Structs
 - `Options` [x]
-  - Crystal: `src/kitty.cr`
+  - Crystal: `src/kitty.cr` (`quiet`, plus deprecated `quite`)
 ### Methods
 - `*Options.Options` [x]
 - `Options.String` [x]

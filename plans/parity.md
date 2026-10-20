@@ -6,23 +6,27 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** continue
+- **Current focus:** finish
   [`plans/upstream-refresh-cb897cb.md`](upstream-refresh-cb897cb.md). Wcwidth
-  per codepoint is complete; the Kitty `Quiet` rename is next.
+  per codepoint and the Kitty `Quiet` rename are complete; the dependency audit
+  is next.
 - **Next up:**
-  1. Port the Kitty `Quiet` option rename while keeping deprecated `Quite`.
-  2. Audit Crystal width dependencies against the upstream `go.mod` bumps.
-  3. Fix HSL conversion accuracy in Sixel so pure colors match Go.
-  4. Add the missing Sixel palette quantization tests.
-  5. Port the remaining color tests and extend `Color` functionality.
-  6. Implement the remaining Sixel decoder behavior and `FullImage` tests.
+  1. Audit Crystal width dependencies against the upstream `go.mod` bumps and
+     record any intentional shard-version divergences.
+  2. Fix HSL conversion accuracy in Sixel so pure colors match Go.
+  3. Add the missing Sixel palette quantization tests.
+  4. Port the remaining color tests and extend `Color` functionality.
+  5. Implement the remaining Sixel decoder behavior and `FullImage` tests.
+  6. Re-audit `x/ansi` against the next newer upstream tag and add missing
+     behavior.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
   - Parser, transitions, decode helpers, handlers: ported.
-  - Width measurement: ported — `WcWidth` now sums per-codepoint widths;
+  - Width measurement: ported — `WcWidth` sums per-codepoint widths;
     `GraphemeWidth` matches the refreshed Go tests.
-  - Kitty and iTerm2 graphics: ported; Kitty `Quiet` rename pending.
+  - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
+    deprecated `Quite` compatibility field.
   - Sixel: in progress — decoder and palette quantization have gaps.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
@@ -35,7 +39,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `a160ad2` (port: wcwidth per codepoint)
-- **Gates:** `make lint` pass; `make test` pass (405 examples).
+- **Gates:** `make lint` pass; `make test` pass (407 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
@@ -57,7 +61,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 - [x] Program Status Protocol (OSC 7501) from `ansi/v0.11.9`
 - [x] Port Wcwidth per codepoint from the `cb897cb` refresh
-- [ ] Port the Kitty `Quiet` option rename from the `cb897cb` refresh
+- [x] Port the Kitty `Quiet` option rename from the `cb897cb` refresh
 - [ ] Audit width dependencies against the refreshed upstream `go.mod`
 - [ ] Re-audit `x/ansi` against the next newer upstream tag and add missing
       behavior
