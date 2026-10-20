@@ -406,11 +406,11 @@ that depends on Go's fused multiply-subtract behavior.
 - `quantizationCube` [x] (Crystal: private `QuantizationCube`)
 - `sixelColor` [x] (Crystal: `SixelColor`)
 ### Methods
-- `*cubePriorityQueue.Push` [x] (Crystal: `Array#<<` with sorting, algorithm differs)
-- `*cubePriorityQueue.Pop` [x] (Crystal: `Array#shift`, algorithm differs)
-- `*cubePriorityQueue.Len` [x] (Crystal: `Array#size`, algorithm differs)
-- `*cubePriorityQueue.Less` [x] (Crystal: sorting by score, algorithm differs)
-- `*cubePriorityQueue.Swap` [x] (Crystal: sorting handles swapping)
+- `*cubePriorityQueue.Push` [x] (Crystal: `MaxHeap#push`)
+- `*cubePriorityQueue.Pop` [x] (Crystal: `MaxHeap#pop`)
+- `*cubePriorityQueue.Len` [x] (Crystal: `MaxHeap#size`)
+- `*cubePriorityQueue.Less` [x] (Crystal: `MaxHeap` comparator block)
+- `*cubePriorityQueue.Swap` [x] (Crystal: private `MaxHeap#swap`)
 - `*sixelPalette.createCube` [x] (Crystal: private `create_cube`)
 - `*sixelPalette.quantize` [x] (Crystal: private `quantize`)
 - `*sixelPalette.ColorIndex` [x] (Crystal: `Palette#color_index`, returns 0

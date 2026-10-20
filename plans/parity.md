@@ -6,16 +6,14 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** re-audit and cleanup. The palette-sort port is complete;
-  all upstream algorithm files now have Crystal counterparts.
+- **Current focus:** re-audit and cleanup. The palette sort and cube heap are
+  now exact ports of Go's algorithms.
 - **Next up:**
   1. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
      the latest) and refresh the vendor pin/plan when it moves.
   2. Reconcile the remaining audit entries that are only Go test helper structs
      in `mouse_test.go` and `parser_test.go`; confirm there are no API gaps.
-  3. Decide whether to replace the Sixel cube priority queue's sort/shift with
-     Go-style heap ordering, or keep it as a documented divergence.
-  4. Add more differential color/width characterization tests if upstream
+  3. Add more differential color/width characterization tests if upstream
      dependency tables advance.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
@@ -28,8 +26,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
     differential grid; alpha-zero colors map to index 0; `Color` exposes
     hex/RGB/true-color/alpha/indexed/basic conversion helpers.
-  - Sixel: encoder, decoder, palette quantization, HSL conversion, and
-    palette segment sorting (pdqsort + xorshift) match Go.
+  - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
+    segment sorting (pdqsort + xorshift), and cube priority queue all match Go.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -43,12 +41,10 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
     cube boundaries.
-  - Sixel segment sorting is an exact port of Go's pdqsort/xorshift; the cube
-    priority queue still uses Crystal sort/shift instead of `container/heap`.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last commit:** `b7c7e17` (port: sixel palette sort)
-- **Gates:** `make lint` pass; `make test` pass (429 examples).
+- **Last commit:** `fbebfc9` (port: transparent color and palette lookup parity)
+- **Gates:** `make lint` pass; `make test` pass (431 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
@@ -78,9 +74,6 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Intentional divergences
 
-- Sixel palette segment sorting is an exact port of Go's pdqsort/xorshift. The
-  cube priority queue still uses Crystal sort/shift rather than Go's
-  `container/heap`; the resulting palette selection matches the tested cases.
 - `ProgramState` and `ProgramStatusKind` are Crystal value structs rather than
   Go named-string types, preserving invalid-value handling while using Crystal
   idioms.

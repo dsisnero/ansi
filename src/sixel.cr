@@ -760,14 +760,11 @@ module Ansi
     private def self.quantize(unique_colors : Array(SixelColor), pixel_counts : Hash(SixelColor, UInt64), max_colors : Int32) : Array(SixelColor)
       return unique_colors if unique_colors.size <= max_colors
 
-      cubes = [] of QuantizationCube
-      cubes << create_cube(unique_colors, pixel_counts, 0, unique_colors.size)
+      cubes = MaxHeap(QuantizationCube).new { |left, right| left.score > right.score }
+      cubes.push(create_cube(unique_colors, pixel_counts, 0, unique_colors.size))
 
       while cubes.size < max_colors
-        cubes.sort_by!(&.score)
-        cubes.reverse!
-        cube = cubes.shift
-        break unless cube
+        cube = cubes.pop
 
         segment = unique_colors[cube.start_index, cube.length]
         case cube.slice_channel
@@ -795,12 +792,13 @@ module Ansi
 
         right_length = cube.length - left_length
         right_index = cube.start_index + left_length
-        cubes << create_cube(unique_colors, pixel_counts, cube.start_index, left_length)
-        cubes << create_cube(unique_colors, pixel_counts, right_index, right_length)
+        cubes.push(create_cube(unique_colors, pixel_counts, cube.start_index, left_length))
+        cubes.push(create_cube(unique_colors, pixel_counts, right_index, right_length))
       end
 
       palette = [] of SixelColor
-      cubes.each do |quant_cube|
+      while cubes.size > 0
+        quant_cube = cubes.pop
         total_red = 0_u64
         total_green = 0_u64
         total_blue = 0_u64
