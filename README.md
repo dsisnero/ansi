@@ -46,6 +46,7 @@ print Ansi.kitty_graphics(payload)
 Run the checks:
 
 ```bash
+make build
 make format
 make lint
 make test

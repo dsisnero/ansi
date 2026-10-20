@@ -16,6 +16,7 @@ program status from `ansi/v0.11.9`.
 ```bash
 make install   # shards install
 make update    # shards update
+make build     # crystal build --no-codegen src/ansi.cr
 make format    # crystal tool format --check src spec
 make lint      # ameba --fix src spec, then ameba src spec
 make test      # crystal spec

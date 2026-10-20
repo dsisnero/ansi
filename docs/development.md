@@ -50,6 +50,7 @@ Record the tag or commit used for the feature in the plan and commit message.
 4. Run the gates:
 
    ```bash
+   make build
    make format
    make lint
    make test

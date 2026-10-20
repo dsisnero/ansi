@@ -1,4 +1,4 @@
-.PHONY: install update format lint test clean sidecars
+.PHONY: install update build format lint test clean sidecars
 
 sidecars:
 	@find . -name '._*' -not -path './.git/*' -delete
@@ -9,6 +9,9 @@ install:
 
 update:
 	shards update
+
+build: sidecars
+	crystal build --no-codegen src/ansi.cr
 
 format: sidecars
 	crystal tool format --check src spec

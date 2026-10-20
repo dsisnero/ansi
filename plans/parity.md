@@ -34,6 +34,8 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     segment sorting (pdqsort + xorshift), and cube priority queue all match Go;
     nil and zero-size images follow upstream output semantics.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
+  - Repository quality gates: `make build`, format, lint, and test run in
+    GitHub Actions.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
@@ -51,7 +53,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `ede2a2b` (port: sixel zero-size image parity)
-- **Gates:** `make lint` pass; `make test` pass (454 examples).
+- **Gates:** `make lint` pass; `make test` pass (455 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
