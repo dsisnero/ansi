@@ -73,6 +73,12 @@ describe Ansi::Sixel do
     end
   end
 
+  describe "FromColor" do
+    it "returns a zero color for nil" do
+      Ansi::Sixel.from_color(nil).should eq Ansi::Sixel::Color.new
+    end
+  end
+
   # Missing functionality tests - marked as pending
   describe "WriteColor (from Go TestWriteColor)" do
     it "simple color number" do

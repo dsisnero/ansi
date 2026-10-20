@@ -102,6 +102,10 @@ module Ansi
 
     # FromColor returns a Sixel color from a color. It converts the color
     # channels to the 0-100 range.
+    def self.from_color(color : Nil) : Color
+      Color.new
+    end
+
     def self.from_color(color : Ansi::Color) : Color
       r16, g16, b16, _ = color.rgba
       Color.new(

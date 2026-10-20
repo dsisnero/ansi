@@ -373,6 +373,7 @@ that depends on Go's fused multiply-subtract behavior.
 ### Methods
 - `Color.RGBA` [x] (Crystal: `#rgba`)
 - `sixelHLS` [x] (Crystal: `Ansi::Sixel.sixel_hls`)
+- `FromColor` [x] (Crystal: `Sixel.from_color`, including nil)
 
 ## sixel/color_test.go
 (no structs or methods)
