@@ -1048,8 +1048,6 @@ module Ansi
       end
 
       def encode(io : IO, image : Ansi::Image) : Nil
-        return if image.width == 0 || image.height == 0
-
         Sixel.write_raster(io, 1, 1, image.width, image.height)
         palette = Sixel.new_palette(image, MaxColors)
 

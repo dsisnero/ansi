@@ -926,6 +926,12 @@ describe Ansi::Sixel do
       io.to_s.should eq ""
     end
 
+    it "matches Go for a zero-size image" do
+      io = IO::Memory.new
+      Ansi::Sixel::Encoder.new.encode(io, Ansi::RGBAImage.new(0, 0))
+      io.to_s.should eq "\"1;1-"
+    end
+
     # Actual encoder tests will need image creation and encoding
     # We'll add those after we verify the encoder works
   end

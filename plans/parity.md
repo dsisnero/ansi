@@ -32,7 +32,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     basic conversion helpers and renders as `#rrggbb`.
   - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
     segment sorting (pdqsort + xorshift), and cube priority queue all match Go;
-    nil images produce no output like upstream.
+    nil and zero-size images follow upstream output semantics.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
 - **Scoping notes / gotchas:**
   - The vendored submodule is now pinned at `cb897cb` (2026-10-18). The refresh
@@ -51,7 +51,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `e665f1d` (feat: render Color as hex)
-- **Gates:** `make lint` pass; `make test` pass (453 examples).
+- **Gates:** `make lint` pass; `make test` pass (454 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 
