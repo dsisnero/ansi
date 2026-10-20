@@ -6,24 +6,24 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** re-audit and differential coverage. The audit ledger has no
-  unchecked entries; the remaining work is watching upstream and dependency
-  tables.
+- **Current focus:** differential coverage and upstream watching. Width now uses
+  Unicode 17 tables; remaining single-codepoint differences are a small set of
+  combining marks where this port is newer than Go's tables.
 - **Next up:**
   1. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
      the latest) and refresh the vendor pin/plan when it moves.
-  2. Add differential color/width characterization tests as upstream
-     dependency tables advance.
-  3. Keep the audit ledger and parity plan refreshed after each upstream bump.
+  2. Keep differential color/width checks running as `unicode_width`,
+     `displaywidth`, and `uax29` tables advance.
+  3. Decide whether to vendor/port `clipperhouse/displaywidth` if exact parity
+     with Go's tables becomes a hard requirement.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
   - Parser, transitions, decode helpers, handlers: ported; test helpers
     reconciled in the audit.
   - Width measurement: ported — `WcWidth` sums per-codepoint widths;
-    `GraphemeWidth` matches Go for text-presentation emoji, regional
-    indicators, tag flags, keycaps, standalone zero-width marks, and the
-    refreshed method tests.
+    `GraphemeWidth` uses Unicode 17 wide tables plus displaywidth-compatible
+    text-presentation, RI, zero-width mark, and grapheme handling.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
@@ -38,9 +38,11 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
   - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
     (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
-  - Crystal `uniwidth`/`uni_text_seg` are already at their latest tags
-    (0.1.3), which lag Go's `displaywidth`/`uax29`; the width fallbacks and
-    GB9c virama merge stay in-repo until those shards update.
+  - Width uses `unicode_width` (Unicode 17) for wide-rune classification and
+    `uniwidth` for combining-mark and East Asian Ambiguous handling.
+    Single-codepoint differential vs Go over U+0000..U+1FFFF is now 84
+    grapheme mismatches and 1 wcwidth mismatch out of 129,024; most leftovers
+    are newer combining marks where this port has newer Unicode data.
   - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
@@ -48,7 +50,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `1492d1f` (port: grapheme zero-width marks)
-- **Gates:** `make lint` pass; `make test` pass (445 examples).
+- **Gates:** `make lint` pass; `make test` pass (450 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

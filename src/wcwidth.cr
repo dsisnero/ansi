@@ -3,6 +3,8 @@ require "uniwidth"
 # Crystal does not expose Unicode general categories, but its generated
 # category tables are available to methods defined inside `Unicode`. This is
 # the equivalent of Go's `unicode.Mn`, `unicode.Me`, and `unicode.Cf` tables.
+require "unicode_width"
+
 module Unicode
   # Returns whether the codepoint is a nonspacing mark, enclosing mark, or
   # format character. These never advance the cursor.
@@ -41,25 +43,26 @@ module Ansi
   # reports some of them, most notably the Indic combining marks, as single
   # width, so they are classified here instead.
   def self.wc_rune_width(codepoint : Int32) : Int32
-    case
-    when codepoint < 0x20, codepoint >= 0x7f && codepoint <= 0x9f
-      # C0 and C1 controls, and DEL, don't print.
-      0
-    when codepoint < 0x7f
-      # Printable ASCII. Everything above it can be East Asian Ambiguous, so
-      # it has to go through the width shard.
-      1
-    when Unicode.zero_width?(codepoint)
-      0
+    return 0 if codepoint < 0x20 || (codepoint >= 0x7f && codepoint <= 0x9f)
+    return 0 if Unicode.zero_width?(codepoint)
+    return 0 if legacy_zero_width?(codepoint)
+
+    if UnicodeCharWidth.default_condition.east_asian && UnicodeCharWidth.ambiguous?(codepoint)
+      2
     else
-      width = UnicodeCharWidth.width(codepoint)
-      # The width shard's double-width table predates recent emoji blocks.
-      # Fall back to the emoji table for emoji codepoints above U+1F900.
-      if width == 1 && codepoint >= 0x1f900 && emoji_codepoint?(codepoint)
-        width = 2
-      end
-      width
+      width = UnicodeWidth.width(codepoint.chr)
+      width > 0 ? width : 1
     end
+  end
+
+  # uniwidth already knows about combining marks that Go's runewidth table
+  # treats as zero width, but it also zeroes Hangul Jamo and U+1734, which Go
+  # measures as one column when they stand alone.
+  private def self.legacy_zero_width?(codepoint : Int32) : Bool
+    return false if codepoint >= 0x1160 && codepoint <= 0x11ff
+    return false if codepoint == 0x1734
+
+    UnicodeCharWidth.width(codepoint) == 0
   end
 
   # Returns the number of columns a grapheme cluster occupies under

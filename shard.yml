@@ -14,6 +14,11 @@ dependencies:
 
   uniwidth:
     github: naqvis/uni_char_width
+
+  unicode_width:
+    github: wyhaines/unicode_width.cr
+    version: ~> 1.0
+
   stumpy_png:
     github: stumpycr/stumpy_png
     version: "~> 5.0"

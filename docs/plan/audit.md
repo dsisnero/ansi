@@ -522,8 +522,8 @@ that depends on Go's fused multiply-subtract behavior.
 
 ## width.go
 (no structs or methods; `stringWidth` measures WcWidth per codepoint and
-GraphemeWidth with displaywidth-compatible text-presentation, RI, and
-standalone zero-width-mark handling)
+GraphemeWidth with Unicode 17 wide tables plus displaywidth-compatible
+text-presentation, RI, and zero-width-mark handling)
 
 ## width_test.go
 (no structs or methods)

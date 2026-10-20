@@ -58,6 +58,11 @@ describe "Ansi width helpers" do
       {"standalone hebrew point", "\u0591", 0, 0},
       {"standalone arabic number sign", "\u0600", 0, 0},
       {"standalone devanagari virama", "\u094d", 0, 0},
+      {"trigram for heaven", "\u2630", 2, 2},
+      {"neutral chess king", "\u{1FA00}", 1, 1},
+      {"bubbles emoji", "\u{1FAE7}", 2, 2},
+      {"standalone enclosing keycap", "\u20e3", 0, 0},
+      {"standalone VS16", "\uFE0F", 0, 0},
     ]
 
     cases.each do |name, input, grapheme, wcwidth|
