@@ -371,6 +371,35 @@ describe "Color types (from Go implementation)" do
 end
 
 # Color distance and quantization
+describe "Convert16 overloads for all palette color types" do
+  it "converts RGBColor" do
+    Ansi.convert_16(Ansi::RGBColor.new(255_u8, 0_u8, 0_u8)).should eq Ansi::BasicColor.new(9_u8)
+  end
+
+  it "converts HexColor to 256 colors" do
+    Ansi.convert_256(Ansi::HexColor.new("#ff0000")).should eq Ansi::IndexedColor.new(196_u8)
+  end
+
+  it "converts HexColor" do
+    Ansi.convert_16(Ansi::HexColor.new("#ff0000")).should eq Ansi::BasicColor.new(9_u8)
+  end
+
+  it "converts XRGBColor" do
+    color = Ansi::XRGBColor.new(Ansi::Color.new(255_u8, 0_u8, 0_u8))
+    Ansi.convert_16(color).should eq Ansi::BasicColor.new(9_u8)
+  end
+
+  it "converts XRGBAColor" do
+    color = Ansi::XRGBAColor.new(Ansi::Color.new(255_u8, 0_u8, 0_u8))
+    Ansi.convert_16(color).should eq Ansi::BasicColor.new(9_u8)
+  end
+
+  it "maps transparent XRGBAColor to index 0" do
+    color = Ansi::XRGBAColor.new(Ansi::Color.new(255_u8, 0_u8, 0_u8, 0_u8))
+    Ansi.convert_16(color).should eq Ansi::BasicColor.new(0_u8)
+  end
+end
+
 describe "Transparent color conversions (from Go behavior)" do
   it "maps alpha-zero colors to palette index 0" do
     transparent = Ansi::Color.new(255_u8, 0_u8, 0_u8, 0_u8)

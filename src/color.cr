@@ -344,11 +344,14 @@ module Ansi
   end
 
   def self.convert_256(color : HexColor) : IndexedColor
-    if c = color.color
-      convert_256(Colorful::Color.new(r: c.r.to_f64 / 255.0, g: c.g.to_f64 / 255.0, b: c.b.to_f64 / 255.0))
-    else
-      IndexedColor.new(0_u8)
-    end
+    return IndexedColor.new(0_u8) if color.hex.empty?
+
+    r, g, b, _ = color.rgba
+    convert_256(Colorful::Color.new(
+      r: (r >> 8).to_f64 / 255.0,
+      g: (g >> 8).to_f64 / 255.0,
+      b: (b >> 8).to_f64 / 255.0,
+    ))
   end
 
   def self.convert_256(color : XRGBColor) : IndexedColor
@@ -436,6 +439,33 @@ module Ansi
   def self.convert_16(color : Color) : BasicColor
     return BasicColor.new(0_u8) if color.a == 0
     convert_16(to_colorful(color))
+  end
+
+  def self.convert_16(color : RGBColor) : BasicColor
+    convert_16(Color.new(color.r, color.g, color.b))
+  end
+
+  def self.convert_16(color : HexColor) : BasicColor
+    return BasicColor.new(0_u8) if color.hex.empty?
+
+    r, g, b, _ = color.rgba
+    convert_16(Color.new((r >> 8).to_u8, (g >> 8).to_u8, (b >> 8).to_u8))
+  end
+
+  def self.convert_16(color : XRGBColor) : BasicColor
+    if c = color.color
+      convert_16(c)
+    else
+      BasicColor.new(0_u8)
+    end
+  end
+
+  def self.convert_16(color : XRGBAColor) : BasicColor
+    if c = color.color
+      convert_16(c)
+    else
+      BasicColor.new(0_u8)
+    end
   end
 
   def self.convert_16(color : Colorful::Color) : BasicColor

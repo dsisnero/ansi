@@ -6,26 +6,28 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
 
 ## Where we are
 
-- **Current focus:** re-audit and cleanup. The palette sort and cube heap are
-  now exact ports of Go's algorithms.
+- **Current focus:** re-audit and differential coverage. The audit ledger has no
+  unchecked entries; the remaining work is watching upstream and dependency
+  tables.
 - **Next up:**
   1. Re-audit `x/ansi` against upstream `main` (currently `cb897cb` is still
      the latest) and refresh the vendor pin/plan when it moves.
-  2. Reconcile the remaining audit entries that are only Go test helper structs
-     in `mouse_test.go` and `parser_test.go`; confirm there are no API gaps.
-  3. Add more differential color/width characterization tests if upstream
+  2. Add differential color/width characterization tests as upstream
      dependency tables advance.
+  3. Keep the audit ledger and parity plan refreshed after each upstream bump.
 - **Status by area:**
   - Core ANSI sequences (colors, styles, cursor, modes, mouse, clipboard,
     notifications, hyperlinks, terminal reports): ported.
-  - Parser, transitions, decode helpers, handlers: ported.
+  - Parser, transitions, decode helpers, handlers: ported; test helpers
+    reconciled in the audit.
   - Width measurement: ported — `WcWidth` sums per-codepoint widths;
     `GraphemeWidth` matches the refreshed Go tests.
   - Kitty and iTerm2 graphics: ported, including the `Quiet` rename with the
     deprecated `Quite` compatibility field.
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
-    differential grid; alpha-zero colors map to index 0; `Color` exposes
-    hex/RGB/true-color/alpha/indexed/basic conversion helpers.
+    differential grid; alpha-zero colors map to index 0; `Convert16` covers
+    every palette color type; `Color` exposes hex/RGB/true-color/alpha/indexed/
+    basic conversion helpers.
   - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
     segment sorting (pdqsort + xorshift), and cube priority queue all match Go.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -44,7 +46,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `f490b33` (port: sixel cube priority queue)
-- **Gates:** `make lint` pass; `make test` pass (431 examples).
+- **Gates:** `make lint` pass; `make test` pass (437 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

@@ -48,7 +48,8 @@
 - `TrueColor.RGBA` [x] (Crystal: `#rgba`)
 - `RGBColor.RGBA` [x] (Crystal: `#rgba`)
 - `Convert256` [x] (Crystal: `Ansi.convert_256`, Go-compatible fma rounding)
-- `Convert16` [x] (Crystal: `Ansi.convert_16`)
+- `Convert16` [x] (Crystal: `Ansi.convert_16`, including `RGBColor`, `HexColor`,
+  `XRGBColor`, and `XRGBAColor` overloads)
 - `Color` conversion helpers [x] (Crystal: `Color#to_hex`, `#to_rgb`,
   `#to_true_color`, `#with_alpha`, `#to_indexed`, `#to_basic`)
 - Alpha-zero conversion [x] (Crystal: `convert_256`/`convert_16` return index 0,
@@ -214,8 +215,8 @@ that depends on Go's fused multiply-subtract behavior.
 
 ## mouse_test.go
 ### Structs
-- `test` [ ]
-- `test` [ ]
+- `test` [x] (Crystal: inline case tables in `spec/mouse_spec.cr`)
+- `test` [x] (Crystal: inline case tables in `spec/mouse_spec.cr`)
 
 ## notification.go
 (no structs or methods)
@@ -287,7 +288,8 @@ that depends on Go's fused multiply-subtract behavior.
 
 ## parser_decode_test.go
 ### Structs
-- `expectedSequence` [ ]
+- `expectedSequence` [x] (Crystal: `ExpectedSequence` in
+  `spec/parser_decode_spec.cr`)
 
 ## parser_esc_test.go
 (no structs or methods)
@@ -309,18 +311,18 @@ that depends on Go's fused multiply-subtract behavior.
 
 ## parser_test.go
 ### Structs
-- `csiSequence` [ ]
-- `dcsSequence` [ ]
-- `testCase` [ ]
-- `testDispatcher` [ ]
+- `csiSequence` [x] (Crystal: `ParserSpecSupport::CsiSequence`)
+- `dcsSequence` [x] (Crystal: `ParserSpecSupport::DcsSequence`)
+- `testCase` [x] (Crystal: inline named-tuple case tables in parser specs)
+- `testDispatcher` [x] (Crystal: `ParserSpecSupport::TestDispatcher`)
 ### Methods
-- `*testDispatcher.dispatchRune` []
-- `*testDispatcher.dispatchControl` []
-- `*testDispatcher.dispatchEsc` []
-- `*testDispatcher.dispatchCsi` []
-- `*testDispatcher.dispatchDcs` []
-- `*testDispatcher.dispatchOsc` []
-- `*testDispatcher.dispatchApc` []
+- `*testDispatcher.dispatchRune` [x] (Crystal: `TestDispatcher#dispatch_rune`)
+- `*testDispatcher.dispatchControl` [x] (Crystal: `TestDispatcher#dispatch_control`)
+- `*testDispatcher.dispatchEsc` [x] (Crystal: `TestDispatcher#dispatch_esc`)
+- `*testDispatcher.dispatchCsi` [x] (Crystal: `TestDispatcher#dispatch_csi`)
+- `*testDispatcher.dispatchDcs` [x] (Crystal: `TestDispatcher#dispatch_dcs`)
+- `*testDispatcher.dispatchOsc` [x] (Crystal: `TestDispatcher#dispatch_osc`)
+- `*testDispatcher.dispatchApc` [x] (Crystal: `TestDispatcher#dispatch_apc`)
 
 ## passthrough.go
 (no structs or methods)
