@@ -29,7 +29,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - Color conversions: ported — `Convert256` matches Go across a 140,608-color
     differential grid; alpha-zero colors map to index 0; `Convert16` covers
     every palette color type; `Color` exposes hex/RGB/true-color/alpha/indexed/
-    basic conversion helpers.
+    basic conversion helpers and renders as `#rrggbb`.
   - Sixel: encoder, decoder, palette quantization, HSL conversion, palette
     segment sorting (pdqsort + xorshift), and cube priority queue all match Go;
     nil images produce no output like upstream.
@@ -51,7 +51,7 @@ lives in [`docs/plan/audit.md`](../docs/plan/audit.md).
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
 - **Last commit:** `d4c1877` (port: sixel nil image encoding parity)
-- **Gates:** `make lint` pass; `make test` pass (451 examples).
+- **Gates:** `make lint` pass; `make test` pass (453 examples).
 
 ## Phase 1 — Core ANSI and parser parity
 

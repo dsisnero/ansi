@@ -21,6 +21,15 @@ module Ansi
       Ansi.color_to_hex_string(self)
     end
 
+    # Alias for [to_hex].
+    def hex : String
+      to_hex
+    end
+
+    def to_s(io : IO) : Nil
+      io << to_hex
+    end
+
     # Returns the color as an [RGBColor].
     def to_rgb : RGBColor
       RGBColor.new(@r, @g, @b)

@@ -32,6 +32,14 @@ describe Ansi::Color do
       Ansi::Color.new(255_u8, 128_u8, 64_u8).to_hex.should eq "#ff8040"
     end
 
+    it "returns a hex string from #hex" do
+      Ansi::Color.new(255_u8, 128_u8, 64_u8).hex.should eq "#ff8040"
+    end
+
+    it "renders as a hex string" do
+      Ansi::Color.new(255_u8, 128_u8, 64_u8).to_s.should eq "#ff8040"
+    end
+
     it "converts to RGBColor" do
       color = Ansi::Color.new(255_u8, 128_u8, 64_u8)
       color.to_rgb.should eq Ansi::RGBColor.new(255_u8, 128_u8, 64_u8)

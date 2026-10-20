@@ -50,8 +50,8 @@
 - `Convert256` [x] (Crystal: `Ansi.convert_256`, Go-compatible fma rounding)
 - `Convert16` [x] (Crystal: `Ansi.convert_16`, including `RGBColor`, `HexColor`,
   `XRGBColor`, and `XRGBAColor` overloads)
-- `Color` conversion helpers [x] (Crystal: `Color#to_hex`, `#to_rgb`,
-  `#to_true_color`, `#with_alpha`, `#to_indexed`, `#to_basic`)
+- `Color` conversion helpers [x] (Crystal: `Color#to_hex`, `#hex`, `#to_s`,
+  `#to_rgb`, `#to_true_color`, `#with_alpha`, `#to_indexed`, `#to_basic`)
 - Alpha-zero conversion [x] (Crystal: `convert_256`/`convert_16` return index 0,
   matching Go's `colorful.MakeColor`)
 
