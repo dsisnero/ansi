@@ -63,7 +63,7 @@ Record the tag or commit used for the feature in the plan and commit message.
 6. Commit one feature atomically using the `port: ...` convention from
    `AGENTS.md`.
 
-CI runs the same gates on Crystal `1.19.1` and `latest`, with cached
+CI runs the same gates on the latest Crystal release, with cached
 dependencies.
 
 ## Temporary files

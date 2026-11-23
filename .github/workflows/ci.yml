@@ -7,29 +7,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        crystal: ["1.19.1", "latest"]
     steps:
-      - uses: actions/checkout@v4
+      # Add a `strategy.matrix.crystal` block here (and use `${{ matrix.crystal }}`
+      # below) to test more than one Crystal release.
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - uses: crystal-lang/install-crystal@v1
         with:
-          crystal: ${{ matrix.crystal }}
+          crystal: latest
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             lib
-            bin
             ~/.cache/shards
-          key: ${{ runner.os }}-crystal-${{ matrix.crystal }}-${{ hashFiles('shard.yml') }}
+          key: ${{ runner.os }}-crystal-${{ hashFiles('shard.yml') }}
           restore-keys: |
-            ${{ runner.os }}-crystal-${{ matrix.crystal }}-
+            ${{ runner.os }}-crystal-
 
       - name: Install dependencies
         run: shards install
