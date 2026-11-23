@@ -1,4 +1,5 @@
 require "textseg"
+require "./incb"
 
 module Ansi
   def self.strip(s : String) : String
@@ -124,21 +125,99 @@ module Ansi
     nil
   end
 
-  # UAX #29 GB9c conjunct clusters for the major Indic scripts. The text
-  # segmentation shard does not merge a consonant + virama with the following
-  # consonant, so merge them here.
-  private INDIC_VIRAMAS = [
-    0x094d, # Devanagari
-    0x09cd, # Bengali
-    0x0a4d, # Gurmukhi
-    0x0acd, # Gujarati
-    0x0b4d, # Oriya
-    0x0bcd, # Tamil
-    0x0c4d, # Telugu
-    0x0ccd, # Kannada
-    0x0d4d, # Malayalam
-    0x0dca, # Sinhala
-  ] of Int32
+  # UAX #29 GB9c state: the segmentation shard does not implement GB9c, so the
+  # conjunct pattern is tracked here. `Consonant` means a Consonant was seen and
+  # is waiting for a Linker, `Linker` means the pattern is ready to join the
+  # next Consonant.
+  private enum ConjunctState
+    None
+    Consonant
+    Linker
+  end
+
+  # Folds the Indic_Conjunct_Break classes of *codepoints* into *state*, the
+  # same way github.com/clipperhouse/uax29's grapheme splitter updates its
+  # GB9c state as it advances.
+  private def self.fold_conjunct_state(state : ConjunctState, codepoints : Array(Int32)) : ConjunctState
+    codepoints.each do |codepoint|
+      if InCB.consonant?(codepoint)
+        state = ConjunctState::Consonant
+      elsif InCB.linker?(codepoint)
+        state = ConjunctState::Linker unless state.none?
+      elsif !InCB.extend?(codepoint)
+        state = ConjunctState::None
+      end
+    end
+    state
+  end
+
+  # Returns the exclusive end offset of the first cluster in *clusters*, joined
+  # with the cluster that follows it while UAX #29 GB9c holds them together:
+  #
+  #   Consonant [Extend Linker]* Linker [Extend Linker]* x Consonant
+  #
+  # The shard breaks the pattern between a Linker and the following Consonant,
+  # which splits Devanagari conjuncts such as "\u0938\u094d\u0924\u0947" into
+  # "\u0938\u094d" and "\u0924\u0947". Linkers are only the six codepoints
+  # Unicode assigns InCB=Linker to, so viramas of scripts without conjunct
+  # clusters (Tamil, Kannada, Sinhala, Gurmukhi) keep their separate clusters.
+  private def self.conjunct_cluster_end(clusters : Array(TextSegment::Grapheme::Cluster)) : Int32
+    _from, to = clusters[0].positions
+    state = fold_conjunct_state(ConjunctState::None, clusters[0].codepoints)
+    index = 0
+
+    while state.linker? && index + 1 < clusters.size
+      following = clusters[index + 1]
+      first = following.codepoints.first?
+      break unless first && InCB.consonant?(first)
+
+      index += 1
+      _from, to = following.positions
+      # GB9c restarts the pattern at the joined Consonant, so the rest of the
+      # cluster is folded from `Consonant` rather than from the previous state.
+      state = fold_conjunct_state(ConjunctState::Consonant, following.codepoints[1..])
+    end
+
+    to
+  end
+
+  # each_grapheme_cluster yields every grapheme cluster in *s* with the width it
+  # occupies, using the same segmentation and the same ANSI handling as
+  # [string_width]: escape sequences are skipped, and a cluster joined by an
+  # Indic Linker absorbs the cluster that follows it (GB9c), so
+  # "\u0938\u094d\u0924\u0947" is one cluster of width 2 rather than
+  # "\u0938\u094d" + "\u0924\u0947".
+  #
+  # Consumers that need to walk a string and measure as they go (drawing a
+  # StyledString, for example) should use this instead of a generic grapheme
+  # iterator. Measuring with [string_width] but segmenting with a different
+  # iterator makes the two disagree on conjuncts, and the terminal paints one
+  # cell where the caller counted two.
+  #
+  # Summing the yielded widths gives [string_width] for the same string, and
+  # the yielded clusters concatenate to `strip(s)`: escape bytes are not
+  # yielded, since they occupy no cells.
+  def self.each_grapheme_cluster(s : String, m : Method = Method::WcWidth, & : String, Int32 ->) : Nil
+    bytes = s.to_slice
+    pstate = ParserTransition::GroundState
+    i = 0
+
+    while i < bytes.size
+      state, action = ParserTransition::Table.transition(pstate, bytes[i])
+      if action == ParserTransition::PrintAction || state == ParserTransition::Utf8State
+        cluster, width = first_grapheme_cluster(s.byte_slice(i, s.bytesize - i), m)
+        break if cluster.empty?
+
+        yield cluster, width
+        i += cluster.bytesize
+        pstate = ParserTransition::GroundState
+        next
+      end
+
+      pstate = state
+      i += 1
+    end
+  end
 
   private def self.first_grapheme_cluster(s : String, m : Method) : {String, Int32}
     return {"", 0} if s.empty?
@@ -146,21 +225,7 @@ module Ansi
     clusters = TextSegment.graphemes(s)
     return {"", 0} if clusters.empty?
 
-    index = 0
-    cluster = clusters[index]
-    from, to = cluster.positions
-    cps = cluster.codepoints
-    last = cps.last?
-    while last && INDIC_VIRAMAS.includes?(last) && index + 1 < clusters.size
-      index += 1
-      following = clusters[index]
-      _following_from, following_to = following.positions
-      to = following_to
-      cps = following.codepoints
-      last = cps.last?
-    end
-
-    cluster_str = s.byte_slice(from, to - from)
+    cluster_str = s.byte_slice(0, conjunct_cluster_end(clusters))
     width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : DisplayWidth.grapheme_width(cluster_str)
     {cluster_str, width}
   end
@@ -172,21 +237,7 @@ module Ansi
     clusters = TextSegment.graphemes(str)
     return {Bytes.empty, 0} if clusters.empty?
 
-    index = 0
-    cluster = clusters[index]
-    _from, to = cluster.positions
-    cps = cluster.codepoints
-    last = cps.last?
-    while last && INDIC_VIRAMAS.includes?(last) && index + 1 < clusters.size
-      index += 1
-      following = clusters[index]
-      _following_from, following_to = following.positions
-      to = following_to
-      cps = following.codepoints
-      last = cps.last?
-    end
-
-    cluster_bytes = bytes[0, to]
+    cluster_bytes = bytes[0, conjunct_cluster_end(clusters)]
     width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
     {cluster_bytes, width}
   end

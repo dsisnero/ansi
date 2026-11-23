@@ -285,6 +285,9 @@ that depends on Go's fused multiply-subtract behavior.
 - `Cmd.Final` [x] (Crystal: `ParserTransition.command`)
 - `Param.Param` [x] (Crystal: `ParserTransition.param`)
 - `Param.HasMore` [x] (Crystal: `ParserTransition.has_more`)
+- `FirstGraphemeCluster` [x] (Crystal: private `first_grapheme_cluster` for
+  width, truncate, and wrap, plus the public `Ansi.each_grapheme_cluster`
+  whole-string iterator; UAX #29 GB9c via `src/incb.cr`)
 
 ## parser_decode_test.go
 ### Structs
@@ -526,7 +529,10 @@ that depends on Go's fused multiply-subtract behavior.
 ## width.go
 (no structs or methods; `stringWidth` measures WcWidth per codepoint with
 vendored go-runewidth v0.0.27 tables and GraphemeWidth with vendored
-`displaywidth` v0.11.0 tables, plus Indic virama cluster joins)
+`displaywidth` v0.11.0 tables, plus UAX #29 GB9c conjunct joins from the
+vendored InCB tables in `src/incb.cr`. Crystal-only addition:
+`Ansi.each_grapheme_cluster` exposes the same segmentation, skipping escape
+sequences the way `stringWidth` does)
 
 ## width_test.go
 (no structs or methods)

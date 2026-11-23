@@ -12,17 +12,23 @@ micro-commits.
 ## Where we are
 
 - **Current focus:** maintenance. Every upstream file in the pinned checkout
-  has a Crystal counterpart, and the audit ledger has no unchecked rows.
+  has a Crystal counterpart, and the audit ledger has no unchecked rows. The
+  last feature exposed the width segmentation as `Ansi.each_grapheme_cluster`
+  and made the GB9c conjunct merge exact.
 - **Next up:**
   1. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
      coherent feature. This is expected to be a no-op while `main` remains
      `cb897cb`.
   2. Extend differential characterization coverage as upstream dependency
-     tables advance.
+     tables advance. Non-GB9c grapheme properties still come from the
+     `textseg` shard, which classifies U+0B53 and U+0B54 (unassigned in
+     Oriya) as Extend where uax29 does not.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
   - Width measurement: ported; GraphemeWidth uses vendored displaywidth v0.11.0
-    tables and WcWidth uses vendored go-runewidth v0.0.27 tables.
+    tables and WcWidth uses vendored go-runewidth v0.0.27 tables. UAX #29 GB9c
+    conjunct segmentation uses vendored InCB tables, and
+    `Ansi.each_grapheme_cluster` exposes it to consumers.
   - Colors and conversions: ported.
   - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -37,6 +43,12 @@ micro-commits.
     GraphemeWidth and go-runewidth v0.0.27 tables for WcWidth. Single-codepoint
     differential vs Go over U+0000..U+1FFFF is 0 grapheme mismatches and 0
     wcwidth mismatches out of 129,024.
+  - `src/incb.cr` vendors the Unicode 17.0.0 Indic_Conjunct_Break tables from
+    the same data uax29 v2.7.0 generates from. Segmentation plus cluster widths
+    were compared against a Go `FirstGraphemeCluster` loop: 3,450 random
+    sequences, 310 hand-picked cases, and every codepoint of the ten Indic
+    blocks plus Myanmar and Khmer after a consonant + Linker, with 0
+    mismatches for WcWidth and GraphemeWidth.
   - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
@@ -46,10 +58,10 @@ micro-commits.
     RLE token consumption.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last feature commit:** `9021a13` (port: vendor go-runewidth tables for
-  WcWidth)
+- **Last feature commit:** `port: expose grapheme cluster segmentation`, which
+  also vendors the InCB tables.
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (469 examples).
+  (509 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -64,6 +76,9 @@ micro-commits.
 - [x] Width model: Wcwidth per codepoint, GraphemeWidth presentation/RI/tag/
       zero-width handling, Unicode 17 tables, Indic GB9c joins, and differential
       coverage against Go
+- [x] Grapheme segmentation API: `Ansi.each_grapheme_cluster` yields clusters
+      and widths from the same parser loop as `string_width`, backed by
+      vendored Indic_Conjunct_Break tables so GB9c boundaries match Go
 - [x] Color system: Convert256/Convert16 parity, transparency handling, Color
       conversion helpers, and hex rendering
 
@@ -95,6 +110,12 @@ micro-commits.
   idioms.
 - The Go-compatible `set_program_status` writer delegates to the idiomatic
   `program_status=` writer.
-- `GraphemeWidth` applies a targeted UAX #29 GB9c merge for major Indic
-  viramas; width classification comes from the vendored displaywidth tables.
-  `WcWidth` follows Go's per-codepoint model.
+- `GraphemeWidth` applies the UAX #29 GB9c conjunct merge over vendored
+  Unicode 17.0.0 Indic_Conjunct_Break tables (`src/incb.cr`), because the
+  `textseg` shard does not implement GB9c; width classification comes from the
+  vendored displaywidth tables. `WcWidth` follows Go's per-codepoint model.
+- `Ansi.each_grapheme_cluster` has no upstream counterpart: Go exposes
+  `FirstGraphemeCluster`, a raw one-cluster primitive that leaves ANSI parsing
+  to the caller. The Crystal helper walks the whole string with the same parser
+  loop as `string_width`, skips escape sequences, and yields each cluster with
+  its width so segmentation and measurement cannot drift apart.
