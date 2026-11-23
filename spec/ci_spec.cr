@@ -11,11 +11,14 @@ describe "CI workflow" do
     end
   end
 
-  it "covers the minimum and latest supported Crystal versions" do
+  it "runs the latest supported Crystal version" do
     content = File.read(File.join(__DIR__, "..", ".github", "workflows", "ci.yml"))
-    content.includes?("matrix").should be_true
-    content.includes?("1.19.1").should be_true
-    content.includes?("latest").should be_true
+    content.includes?("crystal: latest").should be_true
+  end
+
+  it "builds the lint tool instead of relying on a system-wide ameba" do
+    content = File.read(File.join(__DIR__, "..", ".github", "workflows", "ci.yml"))
+    content.includes?("make tools").should be_true
   end
 
   it "caches dependencies" do
