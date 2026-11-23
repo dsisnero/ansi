@@ -254,7 +254,8 @@ that depends on Go's fused multiply-subtract behavior.
 - `*Parser.Params` [x] (Crystal: `#params` getter)
 - `*Parser.Param` [x] (Crystal: `#param`)
 - `*Parser.Command` [x] (Crystal: `#command`)
-- `*Parser.Rune` [x] (Crystal: `#rune`)
+- `*Parser.Rune` [x] (Crystal: `#rune`; invalid UTF-8 decodes to U+FFFD the way
+  Go's `utf8.DecodeRune` does, covered by `spec/parser_invalid_utf8_spec.cr`)
 - `*Parser.Control` [x] (Crystal: `#control`)
 - `*Parser.Data` [x] (Crystal: `#data_slice`)
 - `*Parser.Reset` [x] (Crystal: `#reset`)
@@ -288,6 +289,10 @@ that depends on Go's fused multiply-subtract behavior.
 - `FirstGraphemeCluster` [x] (Crystal: private `first_grapheme_cluster` for
   width, truncate, and wrap, plus the public `Ansi.each_grapheme_cluster`
   whole-string iterator; UAX #29 GB9c via `src/incb.cr`)
+
+## parser_invalid_utf8_spec.cr
+(no upstream counterpart; characterization specs for the vendored parser's
+invalid UTF-8 behavior, verified against Go)
 
 ## parser_decode_test.go
 ### Structs

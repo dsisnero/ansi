@@ -65,7 +65,11 @@ module Ansi
         i += 1
       end
 
-      str = String.new(bytes, "UTF-8", :skip)
+      # Go decodes the collected bytes with utf8.DecodeRune, which turns an
+      # invalid sequence into U+FFFD instead of skipping the offending bytes.
+      str = String.new(bytes)
+      return '\u{FFFD}' unless str.valid_encoding?
+
       str.each_char.first? || '\u{FFFD}'
     end
 

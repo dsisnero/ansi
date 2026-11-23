@@ -58,10 +58,10 @@ micro-commits.
     RLE token consumption.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last feature commit:** `port: expose grapheme cluster segmentation`, which
-  also vendors the InCB tables.
+- **Last feature commit:** `port: decode invalid UTF-8 runes as U+FFFD`, which
+  follows the grapheme segmentation API commit.
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (509 examples).
+  (517 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -70,6 +70,9 @@ micro-commits.
       terminal control helpers
 - [x] Parser: state machine, transitions, handler API, decode helpers, and the
       supporting Go test port
+- [x] Parser invalid UTF-8: `Parser#rune` decodes the collected bytes with
+      U+FFFD substitution like Go's `utf8.DecodeRune`, with characterization
+      specs verified against the vendored parser
 
 ## Phase 2 — Width and colors
 
