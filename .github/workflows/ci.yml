@@ -25,6 +25,7 @@ jobs:
         with:
           path: |
             lib
+            bin
             ~/.cache/shards
           key: ${{ runner.os }}-crystal-${{ matrix.crystal }}-${{ hashFiles('shard.yml') }}
           restore-keys: |
@@ -32,6 +33,9 @@ jobs:
 
       - name: Install dependencies
         run: shards install
+
+      - name: Build tools
+        run: make tools
 
       - name: Build
         run: make build

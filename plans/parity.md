@@ -34,6 +34,8 @@ micro-commits.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
   - Quality gates: build, format, lint, and test run locally and in CI across
     the minimum supported Crystal (1.19.1) and latest, with cached dependencies.
+    CI builds `bin/ameba` from the shard with `make tools`, so lint no longer
+    depends on a system-wide ameba.
 - **Scoping notes / gotchas:**
   - The vendored submodule is pinned at `cb897cb` (2026-10-18). The refresh
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.

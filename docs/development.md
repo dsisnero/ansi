@@ -7,7 +7,6 @@ See [resuming.md](resuming.md) for the start-of-session checklist and
 
 - Crystal `>= 1.19.1`
 - `shards`
-- `ameba` (installed as a development dependency)
 - Git submodule support for the vendored upstream checkout
 
 ## Setup
@@ -15,11 +14,14 @@ See [resuming.md](resuming.md) for the start-of-session checklist and
 ```bash
 git submodule update --init --recursive
 make install
+make tools
 ```
 
 `make install` runs `shards install`; `make update` runs `shards update`.
-Dependencies are recorded in `shard.yml`; `shard.lock` is intentionally not
-committed because this is a library.
+`make tools` builds `bin/ameba` from the ameba development dependency, and
+`make lint` uses that binary when it exists so linting does not depend on a
+system-wide ameba. Dependencies are recorded in `shard.yml`; `shard.lock` is
+intentionally not committed because this is a library.
 
 ## Upstream checkout
 
