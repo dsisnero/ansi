@@ -47,6 +47,11 @@ micro-commits.
      tables advance. Non-GB9c grapheme properties still come from the
      `textseg` shard, which classifies U+0B53 and U+0B54 (unassigned in
      Oriya) as Extend where uax29 does not.
+  5. Invalid UTF-8 width parity: `first_grapheme_cluster` measures nothing for a
+     truncated sequence where Go decodes U+FFFD as one cell, so measured widths
+     differ from `StringWidth` on 632 of 3 269 random invalid inputs and
+     `each_grapheme_cluster` can stop early. Close it by decoding a replacement
+     rune per byte there, matching the parser's existing U+FFFD handling.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
   - Width measurement: ported, and linear in the input. GraphemeWidth uses
@@ -112,6 +117,34 @@ micro-commits.
     (its `uax29` iterator is lazy, and printable ASCII takes the iterator's hot
     path), so the Crystal-side regression spec is a cost bound rather than an
     output golden.
+  - Chunked segmentation (`ClusterWalk`) is only sound if a cluster boundary
+    does not depend on context the chunk shares. Go re-segments at every cluster
+    start, and the `textseg` shard's GB3/GB4 fallback replaces its property state
+    with `Any` after CR, LF and the control code points, so sharing a chunk
+    across a control split regional indicator pairs, dropped Prepend joins and
+    merged an Extend into a control. The walk therefore takes a control code
+    point straight from the buffer (GB4/GB5 outrank every joining rule, and it
+    occupies no cells), drops the shared bounds behind it, re-segments from the
+    next cluster start, and measures malformed bytes from their own window
+    instead of trusting a chunk. Differential against Go at the pin: 7 711 valid
+    cases (7 000+ random/curated, 99 KB CJK runs, every doubling step of the
+    lookahead window) differ only on the 4 pre-existing `Prepend`-run cases
+    above — the same divergence set the pre-`ClusterWalk` code had — and 736
+    `DecodeSequence` cases (parameter counts up to 64, both separators, CSI/DCS
+    and 8-bit prefixes, split at every offset) are byte-identical.
+  - Malformed UTF-8 remains a known gap, unchanged by the fixes above: on 3 269
+    random invalid inputs the measured widths differ from Go in 632 cases (the
+    same count the pre-`ClusterWalk` code had), and `each_grapheme_cluster` and
+    `string_width` can disagree there because `first_grapheme_cluster` stops at a
+    truncated sequence where Go decodes U+FFFD with width 1. A truncated
+    sequence used to hang the chunked walk (`refill_bounds` kept stale bounds and
+    `next_cluster` re-anchored on the same offset forever); that is fixed and
+    covered by a spec. Matching Go for invalid input means decoding a
+    replacement rune per byte, which is the follow-up recorded under "Next up".
+  - Controls are the pathological case for the walk: an all-C1 stream runs at
+    ~0.8 µs per control (20 000 controls in 16.6 ms) because the fast path never
+    enters the segmenter, and a chunk re-anchor starts from the 32-byte
+    single-cluster window rather than a full chunk.
   - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1 ms,
     and 3 000 mixed clusters take ~45 ms in a debug build. The specs bound those
     at 100 ms and 400 ms. On a 99 KB katakana string (`"あ" * 33_000`) the walks
@@ -161,6 +194,12 @@ micro-commits.
       window and printable ASCII never reaches the segmenter, so `string_width`,
       `each_grapheme_cluster`, `truncate`, `wrap`, and the input decoders are
       linear (`ansi.1`)
+- [x] Chunked segmentation: `ClusterWalk` segments a bounded chunk once and
+      shares it across clusters, with control code points taken straight from
+      the buffer (GB4/GB5), the chunk re-anchored behind them, and malformed
+      bytes measured from their own window; verified against Go over 7 711 valid
+      cases (4 pre-existing `Prepend` diffs) and 736 `DecodeSequence` cases
+      (0 diffs)
 - [x] Color system: Convert256/Convert16 parity, transparency handling, Color
       conversion helpers, and hex rendering
 

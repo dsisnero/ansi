@@ -540,12 +540,15 @@ vendored go-runewidth v0.0.27 tables and GraphemeWidth with vendored
 `displaywidth` v0.11.0 tables, plus UAX #29 GB9c conjunct joins from the
 vendored InCB tables in `src/incb.cr`. Crystal-only addition:
 `Ansi.each_grapheme_cluster` exposes the same segmentation, skipping escape
-sequences the way `stringWidth` does. Both are linear in the input: the first
-cluster comes from a 32-byte lookahead window that doubles for longer clusters,
-and printable ASCII followed by ASCII is a one-cell cluster without touching the
-segmenter, mirroring `uax29`'s ASCII hot path. The vendored Go source walks with
-`uax29`'s lazy iterator, so it never had the eager-segmentation cost the
-`textseg` shard introduces)
+sequences the way `stringWidth` does. Both are linear in the input: the walkers
+share a bounded `ClusterWalk` chunk, the first cluster comes from a 32-byte
+lookahead window that doubles for longer clusters, and printable ASCII followed
+by ASCII is a one-cell cluster without touching the segmenter, mirroring
+`uax29`'s ASCII hot path. Control code points are taken straight from the buffer
+(GB4/GB5 outrank every joining rule) and drop the shared chunk, because the
+`textseg` shard loses its property state after a control where Go re-segments at
+every cluster start. The vendored Go source walks with `uax29`'s lazy iterator,
+so it never had the eager-segmentation cost the `textseg` shard introduces)
 
 ## width_test.go
 (no structs or methods)

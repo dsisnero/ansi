@@ -214,10 +214,17 @@ module Ansi
     getter method : Method
     property bounds : Array(Tuple(Int32, Int32))
     property index : Int32
+    # Set when the next refill should start from the small single-cluster
+    # window instead of a full chunk: after a control, the chunk the walk was
+    # sharing is dropped, and `textseg` is quadratic in the window's code points,
+    # so a control-heavy stream would otherwise pay a chunk-sized segmentation
+    # per control.
+    property? narrow : Bool
 
     def initialize(@bytes : Bytes, @method : Method)
       @bounds = [] of Tuple(Int32, Int32)
       @index = 0
+      @narrow = false
     end
   end
 
@@ -227,19 +234,155 @@ module Ansi
     bytes = walk.bytes
     return {Bytes.empty, 0} if offset < 0 || offset >= bytes.size
 
+    # A control code point is always a cluster of its own: GB4/GB5 outrank every
+    # joining rule, including GB9b `Prepend x Any`, and `textseg` also loses its
+    # state behind one (see `control_tail?`). It occupies no cells, so take it
+    # straight from the buffer, drop the shared bounds, and let the next cluster
+    # be segmented from its own start.
+    if (length = control_length(bytes, offset)) > 0
+      walk.bounds = [] of Tuple(Int32, Int32)
+      walk.index = 0
+      walk.narrow = true
+      cluster_bytes = bytes[offset, length]
+      return {cluster_bytes, cluster_width(cluster_bytes, walk.method)}
+    end
+
     # Printable ASCII followed by ASCII is a one-cell cluster of its own (see
     # `ascii_cluster?`), which keeps ASCII documents away from the segmenter.
     return {bytes[offset, 1], 1} if ascii_cluster?(bytes, offset)
 
-    while walk.index >= walk.bounds.size || walk.bounds[walk.index][0] != offset
-      refill_bounds(walk, offset)
-      return {Bytes.empty, 0} if walk.index >= walk.bounds.size
+    # Malformed bytes have no defined grapheme properties, so the segmenter's
+    # chunk state is not trustworthy across them: measure this cluster from its
+    # own window (the pre-`ClusterWalk` behaviour) and drop the shared bounds.
+    if decode_codepoint(bytes, offset).last == 0
+      walk.bounds = [] of Tuple(Int32, Int32)
+      walk.index = 0
+      walk.narrow = true
+      return first_grapheme_cluster(bytes, offset, walk.method)
     end
 
-    _from, to = walk.bounds[walk.index]
-    cluster_bytes = bytes[offset, to - offset]
-    walk.index += 1
-    {cluster_bytes, cluster_width(cluster_bytes, walk.method)}
+    if walk.index >= walk.bounds.size || walk.bounds[walk.index][0] != offset
+      refill_bounds(walk, offset)
+    end
+
+    if walk.index < walk.bounds.size && walk.bounds[walk.index][0] == offset
+      _from, to = walk.bounds[walk.index]
+      cluster_bytes = bytes[offset, to - offset]
+      walk.index += 1
+      # `textseg` replaces its property state with `Any` after CR, LF and the
+      # control code points (its GB3/GB4 fallback outranks the property
+      # transitions), so bounds segmented past a control are not the boundaries a
+      # pass anchored at the next cluster start would find: regional indicator
+      # pairs stop pairing, Prepend stops joining, and an Extend joins a control.
+      # Drop the shared bounds so the next call re-anchors; a fresh segmentation
+      # is what Go's per-cluster `FirstGraphemeCluster` does, and controls are
+      # rare in terminal text.
+      if control_tail?(cluster_bytes)
+        walk.bounds = [] of Tuple(Int32, Int32)
+        walk.index = 0
+        walk.narrow = true
+      end
+      return {cluster_bytes, cluster_width(cluster_bytes, walk.method)}
+    end
+
+    # Malformed input can leave the segmenter with no cluster at *offset* (a
+    # truncated multi-byte sequence, for example). Measure that one from its own
+    # window instead of re-anchoring on the same offset forever; an empty result
+    # is the caller's signal to advance one byte.
+    walk.bounds = [] of Tuple(Int32, Int32)
+    walk.index = 0
+    first_grapheme_cluster(bytes, offset, walk.method)
+  end
+
+  # Number of continuation bytes a UTF-8 lead byte introduces, or 0 when the
+  # byte cannot start a well-formed sequence (continuation, overlong lead, or
+  # outside the Unicode range).
+  private def self.utf8_continuations(lead : UInt8) : Int32
+    case lead
+    when 0xc2..0xdf then 1
+    when 0xe0..0xef then 2
+    when 0xf0..0xf4 then 3
+    else                 0
+    end
+  end
+
+  # Smallest code point a sequence with *continuations* continuation bytes can
+  # encode; anything lower is an overlong encoding.
+  private def self.utf8_minimum(continuations : Int32) : Int32
+    case continuations
+    when 1 then 0x80
+    when 2 then 0x800
+    else        0x10000
+    end
+  end
+
+  private def self.decode_payload(bytes : Bytes, offset : Int32, continuations : Int32) : Int32
+    case continuations
+    when 1
+      ((bytes[offset] & 0x1f).to_i32 << 6) | (bytes[offset + 1] & 0x3f).to_i32
+    when 2
+      ((bytes[offset] & 0x0f).to_i32 << 12) |
+        ((bytes[offset + 1] & 0x3f).to_i32 << 6) |
+        (bytes[offset + 2] & 0x3f).to_i32
+    else
+      ((bytes[offset] & 0x07).to_i32 << 18) |
+        ((bytes[offset + 1] & 0x3f).to_i32 << 12) |
+        ((bytes[offset + 2] & 0x3f).to_i32 << 6) |
+        (bytes[offset + 3] & 0x3f).to_i32
+    end
+  end
+
+  # Decodes the UTF-8 code point that starts at *offset* inside `bytes[0, limit)`,
+  # returning `{codepoint, byte_length}`, or `{0, 0}` when the sequence is
+  # incomplete, overlong or malformed. Hand-rolled because the callers run per
+  # cluster; strict, because a lenient decode would read a lone continuation byte
+  # as a control.
+  private def self.decode_codepoint(bytes : Bytes, offset : Int32, limit : Int32 = bytes.size) : {Int32, Int32}
+    return {0, 0} if offset < 0 || offset >= limit
+
+    lead = bytes[offset]
+    return {lead.to_i32, 1} if lead < 0x80
+
+    continuations = utf8_continuations(lead)
+    return {0, 0} if continuations == 0 || offset + continuations >= limit
+
+    (1..continuations).each do |i|
+      return {0, 0} if (bytes[offset + i] & 0xc0) != 0x80
+    end
+
+    codepoint = decode_payload(bytes, offset, continuations)
+    # Overlong encodings, surrogates and out-of-range code points never look
+    # like a control.
+    return {0, 0} if codepoint < utf8_minimum(continuations) || codepoint > 0x10ffff
+    return {0, 0} if codepoint >= 0xd800 && codepoint <= 0xdfff
+
+    {codepoint, continuations + 1}
+  end
+
+  # CR, LF, DEL and the C0/C1 controls never advance the cursor.
+  private def self.control_codepoint?(codepoint : Int32) : Bool
+    codepoint < 0x20 || codepoint == 0x7f || (0x80 <= codepoint <= 0x9f)
+  end
+
+  # Byte length of the control code point at *offset*, or 0 when the code point
+  # there is not a control.
+  private def self.control_length(bytes : Bytes, offset : Int32) : Int32
+    codepoint, length = decode_codepoint(bytes, offset)
+    length > 0 && control_codepoint?(codepoint) ? length : 0
+  end
+
+  # True when *cluster* ends with CR, LF, DEL, or a C0/C1 control code point.
+  private def self.control_tail?(cluster : Bytes) : Bool
+    size = cluster.size
+    return false if size == 0
+
+    start = size - 1
+    while start > 0 && (cluster[start] & 0xc0) == 0x80
+      start -= 1
+    end
+
+    codepoint, length = decode_codepoint(cluster, start)
+    length > 0 && start + length == size && control_codepoint?(codepoint)
   end
 
   # Segments the chunk that starts at *offset*, keeping every bound that the
@@ -249,7 +392,8 @@ module Ansi
   private def self.refill_bounds(walk : ClusterWalk, offset : Int32) : Nil
     bytes = walk.bytes
     remaining = bytes.size - offset
-    window = Math.min(remaining, SEGMENT_CHUNK_BYTES)
+    first_window = walk.narrow? ? FIRST_CLUSTER_WINDOW : SEGMENT_CHUNK_BYTES
+    window = Math.min(remaining, first_window)
 
     loop do
       clusters = TextSegment.graphemes(bytes_to_string(bytes[offset, window]))
@@ -263,10 +407,19 @@ module Ansi
       unless bounds.empty?
         walk.bounds = bounds
         walk.index = 0
+        walk.narrow = false
         return
       end
 
-      return if window == remaining
+      if window == remaining
+        # Nothing usable came back (a truncated sequence, for example): drop the
+        # old bounds so the walk cannot spin on them. `next_cluster` then measures
+        # this one cluster from its own window.
+        walk.bounds = [] of Tuple(Int32, Int32)
+        walk.index = 0
+        return
+      end
+
       window = Math.min(remaining, window * 2)
     end
   end

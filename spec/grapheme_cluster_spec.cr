@@ -199,13 +199,21 @@ describe "grapheme cluster segmentation cost" do
   end
 
   it "measures and slices a long non-ASCII string in linear time" do
-    elapsed = Time.measure do
-      Ansi.string_width(wide).should eq(66_000)
-      Ansi.cut(wide, 0, 80).should_not be_empty
-      Ansi.truncate(wide, 80, "…").should_not be_empty
-      Ansi.wordwrap(wide, 80, "").should_not be_empty
+    # One bound per operation: summing four walks into a single sample compounds
+    # scheduling noise (a loaded machine drifted a third over), while a regressed
+    # walk costs seconds per operation, not milliseconds. Each takes the fastest
+    # of three samples.
+    checks = {
+      "string_width" => -> { Ansi.string_width(wide).should eq(66_000) },
+      "cut"          => -> { Ansi.cut(wide, 0, 80).should_not be_empty },
+      "truncate"     => -> { Ansi.truncate(wide, 80, "…").should_not be_empty },
+      "wordwrap"     => -> { Ansi.wordwrap(wide, 80, "").should_not be_empty },
+    }
+
+    checks.each do |name, check|
+      elapsed = (1..3).min_of { Time.measure { check.call }.total_milliseconds }
+      elapsed.should be < 300.0, "#{name}: #{elapsed.round(1)} ms"
     end
-    elapsed.should be < 500.milliseconds
   end
 
   # The segmentation must not change while it gets cheaper: a cluster longer
@@ -234,5 +242,62 @@ describe "grapheme cluster segmentation cost" do
     Ansi.string_width_wc("a\u0301").should eq(1)
     Ansi.string_width("a1b2").should eq(4)
     Ansi.string_width_wc("a1b2").should eq(4)
+  end
+end
+
+# The `textseg` shard drops its property state after U+000D, U+000A and the
+# control code points (its GB3/GB4 fallback replaces the state with `Any`), so a
+# chunk segmented *across* a control can hand out boundaries that a fresh pass
+# from the next cluster start would not. Segmenting each cluster from its own
+# offset (the pre-`ClusterWalk` behaviour, and what Go's per-cluster
+# `FirstGraphemeCluster` does) kept them together, so the shared chunk must not
+# be trusted past a control.
+describe "grapheme cluster segmentation after a control" do
+  it "keeps a regional indicator pair together after a C1 control" do
+    grapheme_clusters("\u{009B}🇺🇸").should eq(["\u{009B}", "🇺🇸"])
+  end
+
+  it "keeps a prepend cluster together after a control" do
+    grapheme_clusters("\u{0080}\u{0600}\u{261D}").should eq(["\u{0080}", "\u{0600}\u{261D}"])
+    grapheme_clusters("\u{009B}\u{0600}\u{11A8}").should eq(["\u{009B}", "\u{0600}\u{11A8}"])
+  end
+
+  it "keeps an extend after a control as its own cluster" do
+    # GB4 (Control x Any) outranks GB9 (x Extend), so the tag must not join.
+    grapheme_clusters("\u{0080}\u{009B}\u{E0067}").should eq(["\u{0080}", "\u{009B}", "\u{E0067}"])
+  end
+
+  it "measures the same way after a control" do
+    Ansi.string_width("\u{009B}🇺🇸").should eq(2)
+    Ansi.string_width_wc("\u{009B}🇺🇸").should eq(2)
+    # 1 + DEL(0) + 2 + control(0) + flag(2) + 1
+    Ansi.string_width("a\u007F😀\u{009B}🇺🇸-").should eq(6)
+    Ansi.string_width_wc("a\u007F😀\u{009B}🇺🇸-").should eq(6)
+  end
+end
+
+# A truncated multi-byte sequence is the one input where `textseg` reports no
+# cluster at an offset the walk stops on. The chunked walk used to re-anchor on
+# that same offset forever -- an infinite loop, confirmed on the pre-fix tree --
+# because `refill_bounds` left its previous bounds behind. Malformed bytes are
+# what a terminal gets from `cat` of a binary file, so the walk must terminate.
+describe "grapheme cluster segmentation on malformed input" do
+  it "terminates on a truncated multi-byte sequence" do
+    truncated = Bytes[0x25, 0x03, 0x8d, 0x39, 0x50, 0xca, 0x93, 0x4e, 0x74, 0x13, 0xf0, 0x93]
+    s = String.new(truncated)
+
+    # Same measurement as before the chunked walk; the truncation stops the
+    # cluster iteration (Go's per-cluster decode reports one more cell here,
+    # which is recorded as a known invalid-UTF-8 divergence in plans/parity.md).
+    Ansi.string_width(s).should eq(6)
+    Ansi.string_width_wc(s).should eq(7)
+    grapheme_clusters(s).should eq(["%", "9", "P", "\u{0293}", "N", "t"])
+  end
+
+  it "terminates on a lone continuation byte" do
+    s = String.new(Bytes[0x61, 0x80, 0x62])
+    Ansi.string_width(s).should eq(2)
+    Ansi.string_width_wc(s).should eq(2)
+    grapheme_clusters(s).should eq(["a", "b"])
   end
 end
