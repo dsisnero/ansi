@@ -9,12 +9,18 @@ back to a known-good state.
   focus, the ordered "Next up" list, per-area status, scoping notes or gotchas,
   the last commit, and the current gate results. Do not re-derive state from
   git history.
-- `docs/plan/audit.md` — the curated per-symbol ledger. Use it to see which
-  upstream declarations are still unchecked inside the current area:
+- `docs/plan/audit.md` — the hand-verified per-symbol ledger. Use it to see
+  which upstream declarations are still unchecked inside the current area:
 
   ```bash
   grep -n '\[ \]' docs/plan/audit.md
   ```
+
+- `plans/inventory/go_port_inventory.tsv` — the machine-checked ledger the
+  parity tooling validates (see `AGENTS.md`, "Parity tooling"). It is
+  bootstrapped, so its statuses do not yet mirror `docs/plan/audit.md`; treat
+  `make parity` as a drift check and `docs/plan/audit.md` as the coverage view
+  until the ledger is curated.
 
 ## 2. Confirm the working tree
 
@@ -31,9 +37,10 @@ atomically. If the tree is dirty, finish or stash before starting.
 ```bash
 make lint
 make test
+make parity
 ```
 
-Both must pass before changing anything.
+All must pass before changing anything.
 
 ## 4. Pick the next feature
 

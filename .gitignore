@@ -8,6 +8,9 @@
 /temp/
 /tmp/
 
+# Disposable parity reconciliation output (regenerate with make parity-reconcile)
+/plans/generated/
+
 # Dependency/build directories
 /lib/
 /bin/

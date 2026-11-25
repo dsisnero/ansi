@@ -11,25 +11,36 @@ micro-commits.
 
 ## Where we are
 
-- **Current focus:** maintenance. Every upstream file in the pinned checkout
-  has a Crystal counterpart, and the audit ledger has no unchecked rows. The
-  last feature removed the quadratic cost in the per-cluster path:
-  `first_grapheme_cluster` now segments a lookahead window instead of the whole
-  remaining suffix (the `textseg` shard's `Graphemes#initialize` decodes all of
-  its input), and printable ASCII short-circuits without segmentation like
-  `uax29`'s own hot path. `Ansi.string_width` on 8 000 ASCII characters went
-  from ~50 s to ~1 ms, and a 3.2 KB mixed string from 6.3 s to 45 ms.
+- **Current focus:** maintenance plus parity-tooling adoption. Every upstream
+  file in the pinned checkout has a Crystal counterpart and the hand-verified
+  audit ledger has no unchecked rows. The last feature removed the quadratic
+  cost in the per-cluster path: `first_grapheme_cluster` now segments a lookahead
+  window instead of the whole remaining suffix (the `textseg` shard's
+  `Graphemes#initialize` decodes all of its input), and printable ASCII
+  short-circuits without segmentation like `uax29`'s own hot path.
+  `Ansi.string_width` on 8 000 ASCII characters went from ~50 s to ~1 ms, and a
+  3.2 KB mixed string from 6.3 s to 45 ms. The machine-checked ledger was then
+  bootstrapped; curating it is the open work.
 - **Next up:**
-  1. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
+  1. Curate `plans/inventory/go_port_inventory.tsv`. Reconciliation with no
+     rules maps 618 source entities (317 matched, 81 ambiguous, 220 unmapped),
+     and coarse name normalization finds 344 Crystal counterparts out of 1 314,
+     so the gap is mostly rename rules (Go `String()` → `to_s`,
+     `SetFoo` → `foo=` / `set_foo`, ALL-CAPS cursor and mode helpers) and
+     upstream test helpers that the source scope pulls in. Add
+     `plans/parity_rules.yml`, exclude test helpers from the inventory scope, and
+     move the `docs/plan/audit.md` rows into the ledger one area at a time,
+     starting with `width.go` / `wcwidth.go` / `parser_decode.go`.
+  2. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
      coherent feature. This is expected to be a no-op while `main` remains
      `cb897cb`.
-  2. Close the remaining segmentation divergence: the `textseg` shard breaks
+  3. Close the remaining segmentation divergence: the `textseg` shard breaks
      `GB9b` between two `Prepend` code points (`U+0600 U+0600`), which `uax29`
      keeps in one cluster. Found by the lookahead differential below; 2 of
      7 571 cases. Fixing it means either extending the shard's GB9b table locally
      or folding the prepend run in `first_grapheme_cluster`, the way GB9c is
      folded.
-  3. Extend differential characterization coverage as upstream dependency
+  4. Extend differential characterization coverage as upstream dependency
      tables advance. Non-GB9c grapheme properties still come from the
      `textseg` shard, which classifies U+0B53 and U+0B54 (unassigned in
      Oriya) as Extend where uax29 does not.
@@ -49,6 +60,16 @@ micro-commits.
     from the shard with `make tools`, so lint does not depend on a system-wide
     ameba. The minimum supported Crystal (1.19.1) is checked by hand before a
     release rather than in every run.
+  - Parity tooling: adopted from the installed `cross-language-crystal-parity`
+    skill. `plans/inventory/` holds the curated ledger
+    `go_port_inventory.tsv` (1 314 declarations: 838 consts, 279 functions,
+    138 methods, 33 types, 20 classes, 6 interfaces) plus generated
+    `go_source_parity.tsv` / `go_test_parity.tsv` snapshots with their
+    `.metadata.json`. `make parity` re-validates all three against `x/ansi` with
+    the tree-sitter backend; `make parity-refresh` is for an upstream bump only;
+    `make parity-reconcile` writes the disposable bundle under
+    `plans/generated/` (gitignored). The ledger is bootstrapped, not curated: its
+    rows are all `missing`, so it is a to-do list, not a coverage claim.
 - **Scoping notes / gotchas:**
   - The vendored submodule is pinned at `cb897cb` (2026-10-18). The refresh
     checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
@@ -85,11 +106,16 @@ micro-commits.
     RLE token consumption.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
+  - The ledger and `docs/plan/audit.md` describe the same coverage from two
+    directions: the TSV is machine-checked but uncurated, the markdown is
+    hand-verified but not validated by tooling. Until the ledger is curated, a
+    `make parity` pass means "no drift against the pinned checkout", not "every
+    declaration is ported".
 - **Last feature commit:** `port: segment the first grapheme cluster from a
   lookahead window`, which makes the per-cluster path linear and adds the ASCII
   hot path.
-- **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (523 examples).
+- **Gates:** `make build`, `make format`, `make lint`, `make test` (523
+  examples), and `make parity` (1 314 declarations, 269 tests) pass.
 
 ## Phase 1 — Core ANSI and parser
 
@@ -137,6 +163,13 @@ micro-commits.
 - [x] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
 - [x] Vendor go-runewidth tables for exact WcWidth parity
 - [x] CI hardening: supported-Crystal-version matrix and dependency caching
+- [x] Adopt the `cross-language-crystal-parity` tooling: inventory manifests,
+      `make parity` / `parity-refresh` / `parity-reconcile`, and the
+      AGENTS.md pointer
+- [ ] Curate `plans/inventory/go_port_inventory.tsv` from `docs/plan/audit.md`
+      (rename rules for `String()` → `to_s`, `SetFoo` → `foo=` / `set_foo`,
+      ALL-CAPS helpers; exclude upstream test helpers from the source scope) so
+      the ledger carries real statuses instead of the bootstrap `missing`
 
 ## Intentional divergences
 

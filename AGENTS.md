@@ -20,8 +20,36 @@ make build     # crystal build --no-codegen src/ansi.cr
 make format    # crystal tool format --check src spec
 make lint      # ameba --fix src spec, then ameba src spec
 make test      # crystal spec
+make parity    # parity drift checks against the pinned x/ansi checkout
 make clean     # remove ./temp contents and AppleDouble sidecars
 ```
+
+## Parity tooling
+
+Drift checks and manifest generation come from the installed
+`cross-language-crystal-parity` skill. Invoke its scripts in place; never copy
+them into this repo (the `Makefile` does this):
+
+- Skill directory: `/Users/dominic/.config/opencode/skills/cross-language-crystal-parity`
+  (override with `PARITY_SKILL=...`).
+- Source: `x/ansi` (Go), language `go`, parser mode `tree-sitter`, which must
+  resolve to a manifest-verified `chiasmus` toolchain. Never maintain this ledger
+  with the regex fallback.
+- Curated ledger: `plans/inventory/go_port_inventory.tsv`. Generated reference
+  snapshots: `go_source_parity.tsv` and `go_test_parity.tsv`, each with a
+  `.metadata.json`. `plans/generated/` holds disposable reconciliation output and
+  is gitignored.
+
+```bash
+make parity             # read-only: validate the ledger and both manifests
+make parity-refresh     # intentional upstream bump: regenerate the snapshots
+make parity-reconcile   # entity maps/surfaces/divergences under plans/generated/
+```
+
+Rules: `parity-refresh` only re-derives the generated snapshots; the port
+inventory is curated by hand and is never regenerated. `docs/plan/audit.md`
+stays the annotated, hand-written view of the same coverage, so a change to
+either file updates the other in the same commit.
 
 ## Docs
 
