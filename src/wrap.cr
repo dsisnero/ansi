@@ -19,6 +19,7 @@ module Ansi
     force_newline = false
     pstate = ParserTransition::GroundState
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     add_newline = -> {
       buf.write_byte('\n'.ord.to_u8)
@@ -28,7 +29,7 @@ module Ansi
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if state == ParserTransition::Utf8State
-        cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, width = next_cluster(walk, i)
         i += cluster_bytes.size
 
         if cur_width + width > limit
@@ -104,6 +105,7 @@ module Ansi
     word_len = 0
     pstate = ParserTransition::GroundState
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     add_space = -> {
       cur_width += space.bytesize
@@ -129,7 +131,7 @@ module Ansi
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if state == ParserTransition::Utf8State
-        cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, width = next_cluster(walk, i)
         i += cluster_bytes.size
 
         r = first_char_from_bytes(cluster_bytes)
@@ -217,6 +219,7 @@ module Ansi
     pstate = ParserTransition::GroundState
     bytes = s.to_slice
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     add_space = -> {
       return if space_width == 0 && space.bytesize == 0
@@ -245,7 +248,7 @@ module Ansi
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if state == ParserTransition::Utf8State
-        cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, width = next_cluster(walk, i)
         i += cluster_bytes.size
 
         cluster_str = bytes_to_string(cluster_bytes)

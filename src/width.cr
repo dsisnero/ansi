@@ -60,6 +60,7 @@ module Ansi
     pstate = ParserTransition::GroundState
     width = 0
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
@@ -75,7 +76,7 @@ module Ansi
           next
         end
 
-        cluster_bytes, w = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, w = next_cluster(walk, i)
         width += w
         advance = cluster_bytes.size
         advance = 1 if advance == 0
@@ -151,34 +152,127 @@ module Ansi
     state
   end
 
-  # Returns the exclusive end offset of the first cluster in *clusters*, joined
-  # with the cluster that follows it while UAX #29 GB9c holds them together:
+  # Returns the cluster bounds of *clusters*, joining each cluster with the one
+  # that follows it while UAX #29 GB9c holds them together:
   #
   #   Consonant [Extend Linker]* Linker [Extend Linker]* x Consonant
   #
-  # The shard breaks the pattern between a Linker and the following Consonant,
-  # which splits Devanagari conjuncts such as "\u0938\u094d\u0924\u0947" into
-  # "\u0938\u094d" and "\u0924\u0947". Linkers are only the six codepoints
+  # The segmentation shard breaks the pattern between a Linker and the following
+  # Consonant, which splits Devanagari conjuncts such as "\u0938\u094d\u0924\u0947"
+  # into "\u0938\u094d" and "\u0924\u0947". Linkers are only the six codepoints
   # Unicode assigns InCB=Linker to, so viramas of scripts without conjunct
   # clusters (Tamil, Kannada, Sinhala, Gurmukhi) keep their separate clusters.
-  private def self.conjunct_cluster_end(clusters : Array(TextSegment::Grapheme::Cluster)) : Int32
-    _from, to = clusters[0].positions
-    state = fold_conjunct_state(ConjunctState::None, clusters[0].codepoints)
+  private def self.merged_cluster_bounds(clusters : Array(TextSegment::Grapheme::Cluster)) : Array(Tuple(Int32, Int32))
+    bounds = Array(Tuple(Int32, Int32)).new(clusters.size)
     index = 0
 
-    while state.linker? && index + 1 < clusters.size
-      following = clusters[index + 1]
-      first = following.codepoints.first?
-      break unless first && InCB.consonant?(first)
+    while index < clusters.size
+      from, to = clusters[index].positions
+      state = fold_conjunct_state(ConjunctState::None, clusters[index].codepoints)
 
+      while state.linker? && index + 1 < clusters.size
+        following = clusters[index + 1]
+        first = following.codepoints.first?
+        break unless first && InCB.consonant?(first)
+
+        index += 1
+        _from, to = following.positions
+        # GB9c restarts the pattern at the joined Consonant, so the rest of the
+        # cluster is folded from `Consonant` rather than from the previous state.
+        state = fold_conjunct_state(ConjunctState::Consonant, following.codepoints[1..])
+      end
+
+      bounds << {from, to}
       index += 1
-      _from, to = following.positions
-      # GB9c restarts the pattern at the joined Consonant, so the rest of the
-      # cluster is folded from `Consonant` rather than from the previous state.
-      state = fold_conjunct_state(ConjunctState::Consonant, following.codepoints[1..])
     end
 
-    to
+    bounds
+  end
+
+  # Returns the exclusive end offset of the first cluster in *clusters*, joined
+  # with the cluster that follows it while UAX #29 GB9c holds them together.
+  private def self.conjunct_cluster_end(clusters : Array(TextSegment::Grapheme::Cluster)) : Int32
+    bounds = merged_cluster_bounds(clusters)
+    bounds.empty? ? 0 : bounds[0][1]
+  end
+
+  # Bytes segmented per `TextSegment.graphemes` call when walking a long run.
+  #
+  # The segmenter costs ~10 µs per call no matter how short the input is (it
+  # builds two arrays and a char->byte index), so segmenting one cluster at a
+  # time made every walker pay that per cluster: 33 000 katakana clusters cost
+  # ~400 ms in `string_width` and ~1.6 s in `cut`, however cheap the segmentation
+  # itself had become. Chunking amortises the call: 256 bytes holds ~85 CJK code
+  # points and ~256 ASCII ones.
+  SEGMENT_CHUNK_BYTES = 128
+
+  # State for [next_cluster]: the buffer being walked and the cluster bounds
+  # already segmented from it. A walker must ask for increasing offsets, which
+  # every walker in this shard does.
+  class ClusterWalk
+    getter bytes : Bytes
+    getter method : Method
+    property bounds : Array(Tuple(Int32, Int32))
+    property index : Int32
+
+    def initialize(@bytes : Bytes, @method : Method)
+      @bounds = [] of Tuple(Int32, Int32)
+      @index = 0
+    end
+  end
+
+  # Returns the cluster starting at *offset* and the width it occupies, sharing
+  # the segmentation of a whole chunk between consecutive calls.
+  def self.next_cluster(walk : ClusterWalk, offset : Int32) : {Bytes, Int32}
+    bytes = walk.bytes
+    return {Bytes.empty, 0} if offset < 0 || offset >= bytes.size
+
+    # Printable ASCII followed by ASCII is a one-cell cluster of its own (see
+    # `ascii_cluster?`), which keeps ASCII documents away from the segmenter.
+    return {bytes[offset, 1], 1} if ascii_cluster?(bytes, offset)
+
+    while walk.index >= walk.bounds.size || walk.bounds[walk.index][0] != offset
+      refill_bounds(walk, offset)
+      return {Bytes.empty, 0} if walk.index >= walk.bounds.size
+    end
+
+    _from, to = walk.bounds[walk.index]
+    cluster_bytes = bytes[offset, to - offset]
+    walk.index += 1
+    {cluster_bytes, cluster_width(cluster_bytes, walk.method)}
+  end
+
+  # Segments the chunk that starts at *offset*, keeping every bound that the
+  # window can vouch for. A bound is trusted when the code point after the
+  # cluster is inside the window, or when the window already reaches the end of
+  # the buffer (a cluster cannot be cut short then).
+  private def self.refill_bounds(walk : ClusterWalk, offset : Int32) : Nil
+    bytes = walk.bytes
+    remaining = bytes.size - offset
+    window = Math.min(remaining, SEGMENT_CHUNK_BYTES)
+
+    loop do
+      clusters = TextSegment.graphemes(bytes_to_string(bytes[offset, window]))
+      bounds = [] of Tuple(Int32, Int32)
+
+      merged_cluster_bounds(clusters).each do |(from, to)|
+        break unless window == remaining || to + FIRST_CLUSTER_LOOKAHEAD <= window
+        bounds << {offset + from, offset + to}
+      end
+
+      unless bounds.empty?
+        walk.bounds = bounds
+        walk.index = 0
+        return
+      end
+
+      return if window == remaining
+      window = Math.min(remaining, window * 2)
+    end
+  end
+
+  private def self.cluster_width(cluster_bytes : Bytes, m : Method) : Int32
+    m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
   end
 
   # each_grapheme_cluster yields every grapheme cluster in *s* with the width it
@@ -201,15 +295,16 @@ module Ansi
     bytes = s.to_slice
     pstate = ParserTransition::GroundState
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if action == ParserTransition::PrintAction || state == ParserTransition::Utf8State
-        cluster, width = first_grapheme_cluster(s.byte_slice(i, s.bytesize - i), m)
-        break if cluster.empty?
+        cluster_bytes, width = next_cluster(walk, i)
+        break if cluster_bytes.empty?
 
-        yield cluster, width
-        i += cluster.bytesize
+        yield bytes_to_string(cluster_bytes), width
+        i += cluster_bytes.size
         pstate = ParserTransition::GroundState
         next
       end
@@ -250,45 +345,32 @@ module Ansi
     following >= bytes.size || bytes[following] < 0x80
   end
 
-  private def self.first_grapheme_cluster(s : String, m : Method) : {String, Int32}
-    return {"", 0} if s.empty?
+  # Reads the grapheme cluster that starts at *offset*.
+  #
+  # The walkers used to hand this method `bytes[i, bytes.size - i]`, which
+  # copies the whole remaining string for every cluster: walking a 99 KB
+  # katakana string took ~4.8 s in `each_grapheme_cluster`, ~1.6 s in
+  # `cut`/`truncate` and ~0.8 s in `string_width`. Reading from the offset
+  # copies only the cluster, so every walk is O(n).
+  private def self.first_grapheme_cluster(bytes : Bytes, offset : Int32, m : Method) : {Bytes, Int32}
+    return {Bytes.empty, 0} if offset < 0 || offset >= bytes.size
 
     # Printable ASCII is one cell under both methods, so no width lookup is
     # needed here either.
-    return {s.byte_slice(0, 1), 1} if ascii_cluster?(s.to_slice, 0)
+    return {bytes[offset, 1], 1} if ascii_cluster?(bytes, offset)
 
-    window = Math.min(s.bytesize, FIRST_CLUSTER_WINDOW)
+    remaining = bytes.size - offset
+    window = Math.min(remaining, FIRST_CLUSTER_WINDOW)
     loop do
-      clusters = TextSegment.graphemes(s.byte_slice(0, window))
+      clusters = TextSegment.graphemes(bytes_to_string(bytes[offset, window]))
       stop = clusters.empty? ? 0 : conjunct_cluster_end(clusters)
-      if window == s.bytesize || stop + FIRST_CLUSTER_LOOKAHEAD <= window
-        return {"", 0} if stop == 0
-
-        cluster_str = s.byte_slice(0, stop)
-        width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : DisplayWidth.grapheme_width(cluster_str)
-        return {cluster_str, width}
-      end
-      window = Math.min(s.bytesize, window * 2)
-    end
-  end
-
-  private def self.first_grapheme_cluster(bytes : Bytes, m : Method) : {Bytes, Int32}
-    return {Bytes.empty, 0} if bytes.empty?
-
-    return {bytes[0, 1], 1} if ascii_cluster?(bytes, 0)
-
-    window = Math.min(bytes.size, FIRST_CLUSTER_WINDOW)
-    loop do
-      clusters = TextSegment.graphemes(bytes_to_string(bytes[0, window]))
-      stop = clusters.empty? ? 0 : conjunct_cluster_end(clusters)
-      if window == bytes.size || stop + FIRST_CLUSTER_LOOKAHEAD <= window
+      if window == remaining || stop + FIRST_CLUSTER_LOOKAHEAD <= window
         return {Bytes.empty, 0} if stop == 0
 
-        cluster_bytes = bytes[0, stop]
-        width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
-        return {cluster_bytes, width}
+        cluster_bytes = bytes[offset, stop]
+        return {cluster_bytes, cluster_width(cluster_bytes, m)}
       end
-      window = Math.min(bytes.size, window * 2)
+      window = Math.min(remaining, window * 2)
     end
   end
 

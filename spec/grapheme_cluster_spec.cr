@@ -181,6 +181,33 @@ describe "grapheme cluster segmentation cost" do
     elapsed.should be < 100.milliseconds
   end
 
+  # Every caller passed `bytes[i, bytes.size - i]` to `first_grapheme_cluster`,
+  # so the string walkers still copied the whole remaining suffix once per
+  # cluster and stayed quadratic on non-ASCII text: a 99 KB katakana string
+  # took ~4.8 s in `each_grapheme_cluster`, ~1.6 s in `cut`/`truncate` and
+  # ~0.8 s in `string_width`. Reading the cluster from its offset keeps every
+  # walk O(n), so the same work must now finish in tens of milliseconds.
+  wide = "あ" * 33_000 # ~99 KB, no ASCII fast path.
+
+  it "walks a long non-ASCII string in linear time" do
+    count = 0
+    elapsed = Time.measure do
+      Ansi.each_grapheme_cluster(wide) { |_cluster, _width| count += 1 }
+    end
+    count.should eq(33_000)
+    elapsed.should be < 500.milliseconds
+  end
+
+  it "measures and slices a long non-ASCII string in linear time" do
+    elapsed = Time.measure do
+      Ansi.string_width(wide).should eq(66_000)
+      Ansi.cut(wide, 0, 80).should_not be_empty
+      Ansi.truncate(wide, 80, "…").should_not be_empty
+      Ansi.wordwrap(wide, 80, "").should_not be_empty
+    end
+    elapsed.should be < 500.milliseconds
+  end
+
   # The segmentation must not change while it gets cheaper: a cluster longer
   # than the lookahead window, and clusters that only a full UAX #29 pass gets
   # right.

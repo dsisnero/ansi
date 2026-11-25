@@ -46,11 +46,12 @@ module Ansi
     ignoring = false
     pstate = ParserTransition::GroundState
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if state == ParserTransition::Utf8State
-        cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, width = next_cluster(walk, i)
         i += cluster_bytes.size
         cur_width += width
 
@@ -128,6 +129,7 @@ module Ansi
     ignoring = true
     pstate = ParserTransition::GroundState
     i = 0
+    walk = ClusterWalk.new(bytes, m)
 
     while i < bytes.size
       unless ignoring
@@ -137,7 +139,7 @@ module Ansi
 
       state, action = ParserTransition::Table.transition(pstate, bytes[i])
       if state == ParserTransition::Utf8State
-        cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+        cluster_bytes, width = next_cluster(walk, i)
         i += cluster_bytes.size
         cur_width += width
 

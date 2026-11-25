@@ -98,7 +98,7 @@ module Ansi
               return {bytes[i, 1], 1, 1, NormalState}
             end
 
-            cluster_bytes, width = first_grapheme_cluster(bytes[i, bytes.size - i], m)
+            cluster_bytes, width = first_grapheme_cluster(bytes, i, m)
             if cluster_bytes.empty?
               return {bytes[i, 1], 1, 1, NormalState}
             end
