@@ -287,11 +287,11 @@ that depends on Go's fused multiply-subtract behavior.
 - `Param.Param` [x] (Crystal: `ParserTransition.param`)
 - `Param.HasMore` [x] (Crystal: `ParserTransition.has_more`)
 - `FirstGraphemeCluster` [x] (Crystal: private `first_grapheme_cluster` for
-  width, truncate, and wrap, plus the public `Ansi.each_grapheme_cluster`
-  whole-string iterator; UAX #29 GB9c via `src/incb.cr`. Find the first cluster
-  from a lookahead window instead of segmenting the whole remaining suffix, and
-  short-circuit printable ASCII, since the `textseg` shard decodes its entire
-  input up front; the Go version is lazy through `uax29`)
+  width, truncate, wrap, and the input decoders, plus the public
+  `Ansi.each_grapheme_cluster` whole-string iterator. Segmentation is the
+  vendored UAX #29 splitter: `src/gcb.cr` holds uax29's property ranges and
+  `src/grapheme.cr` its GB3-GB13 rule ladder, so a boundary is the one the Go
+  dependency finds; printable ASCII short-circuits with no segmentation)
 
 ## parser_invalid_utf8_spec.cr
 (no upstream counterpart; characterization specs for the vendored parser's
@@ -537,18 +537,15 @@ invalid UTF-8 behavior, verified against Go)
 ## width.go
 (no structs or methods; `stringWidth` measures WcWidth per codepoint with
 vendored go-runewidth v0.0.27 tables and GraphemeWidth with vendored
-`displaywidth` v0.11.0 tables, plus UAX #29 GB9c conjunct joins from the
-vendored InCB tables in `src/incb.cr`. Crystal-only addition:
-`Ansi.each_grapheme_cluster` exposes the same segmentation, skipping escape
-sequences the way `stringWidth` does. Both are linear in the input: the walkers
-share a bounded `ClusterWalk` chunk, the first cluster comes from a 32-byte
-lookahead window that doubles for longer clusters, and printable ASCII followed
-by ASCII is a one-cell cluster without touching the segmenter, mirroring
-`uax29`'s ASCII hot path. Control code points are taken straight from the buffer
-(GB4/GB5 outrank every joining rule) and drop the shared chunk, because the
-`textseg` shard loses its property state after a control where Go re-segments at
-every cluster start. The vendored Go source walks with `uax29`'s lazy iterator,
-so it never had the eager-segmentation cost the `textseg` shard introduces)
+`displaywidth` v0.11.0 tables, plus UAX #29 segmentation from the vendored
+uax29 splitter: property ranges in `src/gcb.cr`, rule ladder in
+`src/grapheme.cr`. Crystal-only addition: `Ansi.each_grapheme_cluster` exposes
+the same segmentation, skipping escape sequences the way `stringWidth` does.
+Both are linear in the input: the splitter reads one code point at a time, and
+printable ASCII followed by ASCII is a one-cell cluster without touching it,
+mirroring `uax29`'s ASCII hot path. The `textseg` shard is not used: its
+single-slot state machine diverged from Go after Prepend, control and malformed
+bytes)
 
 ## width_test.go
 (no structs or methods)

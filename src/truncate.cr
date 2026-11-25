@@ -199,26 +199,22 @@ module Ansi
   end
 
   def self.byte_to_grapheme_range(str : String, byte_start : Int32, byte_stop : Int32) : {Int32, Int32}
+    bytes = str.to_slice
     byte_pos = 0
     char_pos = 0
-    iter = TextSegment.each_grapheme(str)
 
-    while byte_start > byte_pos
-      cluster = iter.next
-      break if cluster.is_a?(Iterator::Stop)
-      from, to = cluster.positions
-      byte_pos += (to - from)
-      width = grapheme_cluster_width(cluster)
+    while byte_start > byte_pos && byte_pos < bytes.size
+      stop = Grapheme.cluster_end(bytes, byte_pos)
+      width = DisplayWidth.grapheme_width(bytes[byte_pos, stop - byte_pos])
+      byte_pos = stop
       char_pos += Math.max(1, width)
     end
     char_start = char_pos
 
-    while byte_stop > byte_pos
-      cluster = iter.next
-      break if cluster.is_a?(Iterator::Stop)
-      from, to = cluster.positions
-      byte_pos += (to - from)
-      width = grapheme_cluster_width(cluster)
+    while byte_stop > byte_pos && byte_pos < bytes.size
+      stop = Grapheme.cluster_end(bytes, byte_pos)
+      width = DisplayWidth.grapheme_width(bytes[byte_pos, stop - byte_pos])
+      byte_pos = stop
       char_pos += Math.max(1, width)
     end
 

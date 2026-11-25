@@ -12,9 +12,6 @@ dependencies:
   colorful:
     github: dsisnero/colorful
 
-  textseg:
-    github: naqvis/uni_text_seg
-
   stumpy_png:
     github: stumpycr/stumpy_png
     version: "~> 5.0"

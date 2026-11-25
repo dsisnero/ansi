@@ -13,15 +13,15 @@ micro-commits.
 
 - **Current focus:** maintenance. Every upstream file in the pinned checkout has
   a Crystal counterpart and the hand-verified audit ledger has no unchecked rows.
-  The port is now pinned to upstream `8aab43e` (`ansi/v0.11.10`), whose only
-  `ansi/` change since `cb897cb` was a bounds fix in `DecodeSequence`: parameter
-  writes are guarded and the count saturates at the configured capacity
-  (`plans/upstream-refresh-8aab43e.md`). Before that, the per-cluster path went
-  linear — `first_grapheme_cluster` measures from a lookahead window, printable
-  ASCII never reaches the segmenter, and the walkers hand it a bounded chunk
-  instead of the remaining suffix: `Ansi.string_width` on 8 000 ASCII characters
-  went from ~50 s to ~1 ms, and a 99 KB non-ASCII string from ~4.8 s to ~94 ms.
-  The machine-checked ledger was bootstrapped; curating it is the open work.
+  The port is pinned to upstream `8aab43e` (`ansi/v0.11.10`), whose only `ansi/`
+  change since `cb897cb` was a bounds fix in `DecodeSequence`
+  (`plans/upstream-refresh-8aab43e.md`). Grapheme segmentation is now the vendored
+  UAX #29 splitter itself — `src/gcb.cr` carries uax29's property ranges and
+  `src/grapheme.cr` ports its rule ladder — replacing the `textseg` shard, which
+  is no longer a dependency. That removed the last divergence: 10 503 valid, 504
+  `Prepend`, 3 266 invalid-UTF-8 and 732 `DecodeSequence` differential cases all
+  match the vendored Go source exactly. The machine-checked ledger was
+  bootstrapped; curating it is the open work.
 - **Next up:**
   1. Curate `plans/inventory/go_port_inventory.tsv`. Reconciliation with no
      rules maps 618 source entities (317 matched, 81 ambiguous, 220 unmapped),
@@ -37,29 +37,19 @@ micro-commits.
      `plans/upstream-refresh-8aab43e.md`. A no-op while `main` remains
      `8aab43e`; check `git -C vendor/x log --oneline 8aab43e..origin/main -- ansi`
      first.
-  3. Close the remaining segmentation divergence: the `textseg` shard breaks
-     `GB9b` between two `Prepend` code points (`U+0600 U+0600`), which `uax29`
-     keeps in one cluster. Found by the lookahead differential below; 2 of
-     7 571 cases. Fixing it means either extending the shard's GB9b table locally
-     or folding the prepend run in `first_grapheme_cluster`, the way GB9c is
-     folded.
-  4. Extend differential characterization coverage as upstream dependency
-     tables advance. Non-GB9c grapheme properties still come from the
-     `textseg` shard, which classifies U+0B53 and U+0B54 (unassigned in
-     Oriya) as Extend where uax29 does not.
-  5. Invalid UTF-8 width parity: `first_grapheme_cluster` measures nothing for a
-     truncated sequence where Go decodes U+FFFD as one cell, so measured widths
-     differ from `StringWidth` on 632 of 3 269 random invalid inputs and
-     `each_grapheme_cluster` can stop early. Close it by decoding a replacement
-     rune per byte there, matching the parser's existing U+FFFD handling.
+  3. Extend differential characterization coverage as upstream dependency
+     tables advance: the vendored `src/gcb.cr` and the displaywidth/runewidth
+     tables are now the only sources of Unicode truth, so refresh them together
+     when upstream moves.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
   - Width measurement: ported, and linear in the input. GraphemeWidth uses
     vendored displaywidth v0.11.0 tables and WcWidth uses vendored go-runewidth
-    v0.0.27 tables. UAX #29 GB9c conjunct segmentation uses vendored InCB
-    tables, and `Ansi.each_grapheme_cluster` exposes it to consumers. The
-    first cluster of a suffix is found from a 32-byte lookahead window (doubling
-    for longer clusters) and printable ASCII never reaches the segmenter.
+    v0.0.27 tables. Grapheme cluster segmentation is uax29's own: `src/gcb.cr`
+    (property ranges from Unicode 17.0.0, including the InCB columns) plus
+    `src/grapheme.cr` (the GB3–GB13 rule ladder and its four state bits), and
+    `Ansi.each_grapheme_cluster` exposes it to consumers. Printable ASCII never
+    reaches the splitter.
   - Colors and conversions: ported.
   - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -98,59 +88,46 @@ micro-commits.
     GraphemeWidth and go-runewidth v0.0.27 tables for WcWidth. Single-codepoint
     differential vs Go over U+0000..U+1FFFF is 0 grapheme mismatches and 0
     wcwidth mismatches out of 129,024.
-  - `src/incb.cr` vendors the Unicode 17.0.0 Indic_Conjunct_Break tables from
-    the same data uax29 v2.7.0 generates from. Segmentation plus cluster widths
-    were compared against a Go `FirstGraphemeCluster` loop: 3,450 random
-    sequences, 310 hand-picked cases, and every codepoint of the ten Indic
-    blocks plus Myanmar and Khmer after a consonant + Linker, with 0
-    mismatches for WcWidth and GraphemeWidth.
+  - The Indic_Conjunct_Break columns of `src/gcb.cr` come from the same uax29
+    v2.7.0 tables. Segmentation plus cluster widths were compared against a Go
+    `FirstGraphemeCluster` loop: 3,450 random sequences, 310 hand-picked cases,
+    and every codepoint of the ten Indic blocks plus Myanmar and Khmer after a
+    consonant + Linker, with 0 mismatches for WcWidth and GraphemeWidth.
   - Sixel HLS uses a native port of Go's `colorful.Hsl` plus Go's 16-bit
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
     cube boundaries.
-  - The lookahead fix was verified against the vendored Go source three ways:
-    7 571 curated/random cases (Indic conjuncts, ZWJ families, tag flags, Hangul,
-    RI pairs, escapes, long clusters) and 3 263 invalid-UTF-8 cases produce
-    byte-identical `string_width`, `string_width_wc`, and cluster lists before
-    and after the change; against Go's `StringWidth`/`FirstGraphemeCluster` walk
-    only the 2 `Prepend`-run cases above differ. Go is linear here already
-    (its `uax29` iterator is lazy, and printable ASCII takes the iterator's hot
-    path), so the Crystal-side regression spec is a cost bound rather than an
-    output golden.
-  - Chunked segmentation (`ClusterWalk`) is only sound if a cluster boundary
-    does not depend on context the chunk shares. Go re-segments at every cluster
-    start, and the `textseg` shard's GB3/GB4 fallback replaces its property state
-    with `Any` after CR, LF and the control code points, so sharing a chunk
-    across a control split regional indicator pairs, dropped Prepend joins and
-    merged an Extend into a control. The walk therefore takes a control code
-    point straight from the buffer (GB4/GB5 outrank every joining rule, and it
-    occupies no cells), drops the shared bounds behind it, re-segments from the
-    next cluster start, and measures malformed bytes from their own window
-    instead of trusting a chunk. Differential against Go at the pin: 7 711 valid
-    cases (7 000+ random/curated, 99 KB CJK runs, every doubling step of the
-    lookahead window) differ only on the 4 pre-existing `Prepend`-run cases
-    above — the same divergence set the pre-`ClusterWalk` code had — and 736
-    `DecodeSequence` cases (parameter counts up to 64, both separators, CSI/DCS
-    and 8-bit prefixes, split at every offset) are byte-identical.
-  - Malformed UTF-8 remains a known gap, unchanged by the fixes above: on 3 269
-    random invalid inputs the measured widths differ from Go in 632 cases (the
-    same count the pre-`ClusterWalk` code had), and `each_grapheme_cluster` and
-    `string_width` can disagree there because `first_grapheme_cluster` stops at a
-    truncated sequence where Go decodes U+FFFD with width 1. A truncated
-    sequence used to hang the chunked walk (`refill_bounds` kept stale bounds and
-    `next_cluster` re-anchored on the same offset forever); that is fixed and
-    covered by a spec. Matching Go for invalid input means decoding a
-    replacement rune per byte, which is the follow-up recorded under "Next up".
-  - Controls are the pathological case for the walk: an all-C1 stream runs at
-    ~0.8 µs per control (20 000 controls in 16.6 ms) because the fast path never
-    enters the segmenter, and a chunk re-anchor starts from the 32-byte
-    single-cluster window rather than a full chunk.
-  - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1 ms,
+  - Grapheme segmentation is the vendored UAX #29 splitter: `src/gcb.cr` holds
+    the code point → property ranges decoded from
+    `github.com/clipperhouse/uax29/v2@v2.7.0`'s generated tables (Unicode 17.0.0
+    GraphemeBreakProperty plus the emoji and Indic_Conjunct_Break columns, 1 631
+    ranges), and `src/grapheme.cr` ports uax29's rule ladder (GB3–GB13) with its
+    four state bits (previous two properties, regional indicator run, InCB). The
+    `textseg` shard was the last divergence and is no longer a dependency: its
+    state machine is single-slot, so a Prepend, a control or an illegal byte
+    reset whatever it was tracking. Differential against Go at the pin, all
+    byte-identical:
+    - 10 503 valid cases (Indic conjuncts, ZWJ families, tag flags, Hangul,
+      Prepend runs, RI pairs, escapes, 99 KB CJK runs, random code points);
+    - 504 `Prepend` cases (every Prepend code point × followers, runs, with
+      Extend/ZWJ/SpacingMark, Prepend + RI, Prepend + conjunct);
+    - 3 266 invalid-UTF-8 inputs, including truncated sequences, stray
+      continuations and every byte class after printable ASCII;
+    - 732 `DecodeSequence` cases (parameter counts to 64, both separators,
+      CSI/DCS and 8-bit prefixes, split at every offset).
+  - Malformed input is segmented the way uax29 does it: an illegal sequence
+    advances by the bytes the decoder could trust (1 for a stray continuation, 2
+    for a bad third byte, and so on), and an encoding cut short by the end of the
+    input takes the rest of the buffer as the final cluster. `bytes_to_string`
+    keeps those raw bytes in the yielded `String`, so a cluster's length and its
+    measured width stay consistent.
+  - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1.3 ms,
     and 3 000 mixed clusters take ~45 ms in a debug build. The specs bound those
     at 100 ms and 400 ms. On a 99 KB katakana string (`"あ" * 33_000`) the walks
-    are ~65 ms (`string_width`), ~94 ms (`each_grapheme_cluster`) and ~113 ms
-    (`cut`/`truncate`); two specs bound the walk and the measure/slice mix at
-    500 ms each.
+    are ~49 ms (`string_width`), ~103 ms (`each_grapheme_cluster`), ~95 ms
+    (`truncate`) and ~113 ms (`cut`); the cost specs bound the walk and the
+    measure/slice mix at 300 ms per operation. All of it is linear: the splitter
+    reads one code point at a time and never re-decodes the input.
   - Sixel decoder differential fuzzing (200 randomized images) matches Go for
     raster bounds, out-of-bounds pixels, palette definitions, RLE, CR/LF, and
     RLE token consumption.
@@ -190,16 +167,14 @@ micro-commits.
 - [x] Grapheme segmentation API: `Ansi.each_grapheme_cluster` yields clusters
       and widths from the same parser loop as `string_width`, backed by
       vendored Indic_Conjunct_Break tables so GB9c boundaries match Go
-- [x] Segmentation cost: the first cluster comes from a doubling lookahead
-      window and printable ASCII never reaches the segmenter, so `string_width`,
+- [x] Segmentation cost: the splitter reads one code point at a time and
+      printable ASCII never reaches it, so `string_width`,
       `each_grapheme_cluster`, `truncate`, `wrap`, and the input decoders are
       linear (`ansi.1`)
-- [x] Chunked segmentation: `ClusterWalk` segments a bounded chunk once and
-      shares it across clusters, with control code points taken straight from
-      the buffer (GB4/GB5), the chunk re-anchored behind them, and malformed
-      bytes measured from their own window; verified against Go over 7 711 valid
-      cases (4 pre-existing `Prepend` diffs) and 736 `DecodeSequence` cases
-      (0 diffs)
+- [x] Vendored UAX #29 splitter: `src/gcb.cr` (uax29 v2.7.0 property ranges,
+      Unicode 17.0.0) and `src/grapheme.cr` (GB3–GB13 rule ladder), replacing the
+      `textseg` shard; 0 diffs against Go over 10 503 valid, 504 `Prepend`,
+      3 266 invalid-UTF-8 and 732 `DecodeSequence` cases
 - [x] Color system: Convert256/Convert16 parity, transparency handling, Color
       conversion helpers, and hex rendering
 
@@ -242,10 +217,10 @@ micro-commits.
   idioms.
 - The Go-compatible `set_program_status` writer delegates to the idiomatic
   `program_status=` writer.
-- `GraphemeWidth` applies the UAX #29 GB9c conjunct merge over vendored
-  Unicode 17.0.0 Indic_Conjunct_Break tables (`src/incb.cr`), because the
-  `textseg` shard does not implement GB9c; width classification comes from the
-  vendored displaywidth tables. `WcWidth` follows Go's per-codepoint model.
+- `GraphemeWidth` segments with the vendored UAX #29 splitter (`src/gcb.cr`
+  properties from uax29 v2.7.0, Unicode 17.0.0, and the rule ladder in
+  `src/grapheme.cr`); width classification comes from the vendored displaywidth
+  tables. `WcWidth` follows Go's per-codepoint model and skips segmentation.
 - `Ansi.each_grapheme_cluster` has no upstream counterpart: Go exposes
   `FirstGraphemeCluster`, a raw one-cluster primitive that leaves ANSI parsing
   to the caller. The Crystal helper walks the whole string with the same parser

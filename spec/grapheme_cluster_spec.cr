@@ -136,12 +136,11 @@ describe "Ansi.each_grapheme_cluster" do
   end
 end
 
-# `first_grapheme_cluster` used to hand the whole remaining string to
-# `TextSegment.graphemes` for every cluster, so walking a string cost O(n²):
-# 475 bytes took 14 ms, 1.9 KB took 477 ms and 3.8 KB took 3.5 s. Consumers that
-# measure as they draw (`StyledString`) and the input decoders pay that per
-# frame or per read, so the segmentation must only look at the cluster it
-# needs.
+# `first_grapheme_cluster` used to hand the whole remaining string to an eager
+# segmenter for every cluster, so walking a string cost O(n²): 475 bytes took
+# 14 ms, 1.9 KB took 477 ms and 3.8 KB took 3.5 s. Consumers that measure as they
+# draw (`StyledString`) and the input decoders pay that per frame or per read, so
+# the segmentation must only look at the cluster it needs.
 describe "grapheme cluster segmentation cost" do
   # Long enough for the quadratic shape to dominate (3000 clusters), short
   # enough to stay instant when linear. The bound is ~60x the linear cost and
@@ -245,13 +244,10 @@ describe "grapheme cluster segmentation cost" do
   end
 end
 
-# The `textseg` shard drops its property state after U+000D, U+000A and the
-# control code points (its GB3/GB4 fallback replaces the state with `Any`), so a
-# chunk segmented *across* a control can hand out boundaries that a fresh pass
-# from the next cluster start would not. Segmenting each cluster from its own
-# offset (the pre-`ClusterWalk` behaviour, and what Go's per-cluster
-# `FirstGraphemeCluster` does) kept them together, so the shared chunk must not
-# be trusted past a control.
+# GB4/GB5 break on both sides of every control, so a control always ends the
+# cluster it is in and starts a new one; the rules that follow it (regional
+# indicator parity, Prepend, extended pictographic) must not inherit the state of
+# whatever came before.
 describe "grapheme cluster segmentation after a control" do
   it "keeps a regional indicator pair together after a C1 control" do
     grapheme_clusters("\u{009B}🇺🇸").should eq(["\u{009B}", "🇺🇸"])
@@ -276,22 +272,22 @@ describe "grapheme cluster segmentation after a control" do
   end
 end
 
-# A truncated multi-byte sequence is the one input where `textseg` reports no
-# cluster at an offset the walk stops on. The chunked walk used to re-anchor on
-# that same offset forever -- an infinite loop, confirmed on the pre-fix tree --
-# because `refill_bounds` left its previous bounds behind. Malformed bytes are
-# what a terminal gets from `cat` of a binary file, so the walk must terminate.
+# A truncated multi-byte sequence is the one input a segmenter cannot make sense
+# of. An earlier chunked walk re-anchored on that same offset forever -- an
+# infinite loop, confirmed on the pre-fix tree. Malformed bytes are what a
+# terminal gets from `cat` of a binary file, so the walk must terminate, and it
+# must agree with Go: uax29 takes the rest of the buffer as the final cluster.
 describe "grapheme cluster segmentation on malformed input" do
   it "terminates on a truncated multi-byte sequence" do
     truncated = Bytes[0x25, 0x03, 0x8d, 0x39, 0x50, 0xca, 0x93, 0x4e, 0x74, 0x13, 0xf0, 0x93]
     s = String.new(truncated)
 
-    # Same measurement as before the chunked walk; the truncation stops the
-    # cluster iteration (Go's per-cluster decode reports one more cell here,
-    # which is recorded as a known invalid-UTF-8 divergence in plans/parity.md).
-    Ansi.string_width(s).should eq(6)
+    # uax29 takes the rest of the buffer as the final cluster when an encoding is
+    # cut short, so the truncated sequence is one cluster of one cell -- the same
+    # measurement Go's `StringWidth` reports.
+    Ansi.string_width(s).should eq(7)
     Ansi.string_width_wc(s).should eq(7)
-    grapheme_clusters(s).should eq(["%", "9", "P", "\u{0293}", "N", "t"])
+    grapheme_clusters(s).should eq(["%", "9", "P", "\u{0293}", "N", "t", String.new(Bytes[0xf0_u8, 0x93_u8])])
   end
 
   it "terminates on a lone continuation byte" do
@@ -299,5 +295,39 @@ describe "grapheme cluster segmentation on malformed input" do
     Ansi.string_width(s).should eq(2)
     Ansi.string_width_wc(s).should eq(2)
     grapheme_clusters(s).should eq(["a", "b"])
+  end
+end
+
+# GB9b (`Prepend x Any`) is evaluated against the code point immediately before
+# the boundary, and everything GB9b joins must keep its own follow-up rules
+# (Hangul, extended pictographic, regional indicator parity, GB9c). Expectations
+# are the Go walk's output (uax29) for the same input.
+describe "grapheme cluster segmentation with Prepend" do
+  it "joins a Prepend run to what follows" do
+    grapheme_clusters("\u{0600}\u{0600}-").should eq(["\u{0600}\u{0600}-"])
+    grapheme_clusters("\u{0605}\u{0605}a").should eq(["\u{0605}\u{0605}a"])
+    grapheme_clusters("a\u{0600}b").should eq(["a", "\u{0600}b"])
+  end
+
+  it "keeps GB4/GB5 above GB9b" do
+    # TAB is an execute byte and occupies no cells; the Prepend must not take it.
+    grapheme_clusters("\u{0600}\t").should eq(["\u{0600}"])
+  end
+
+  it "does not reach across an Extend or a ZWJ" do
+    grapheme_clusters("\u{0600}\u{0301}a").should eq(["\u{0600}\u{0301}", "a"])
+    grapheme_clusters("\u{0600}\u{200D}😀").should eq(["\u{0600}\u{200D}", "😀"])
+  end
+
+  it "keeps the joined cluster's own rules" do
+    grapheme_clusters("\u{11A84}🏴\u{200D}🏳").should eq(["\u{11A84}🏴\u200D🏳"])
+    grapheme_clusters("\u{070F}\u{1100}\u{1100}").should eq(["\u{070F}\u{1100}\u{1100}"])
+    grapheme_clusters("\u{0D4E}\u{11A8}\u{11A8}").should eq(["\u{0D4E}\u{11A8}\u{11A8}"])
+    grapheme_clusters("\u{0600}🇺🇸").should eq(["\u{0600}🇺🇸"])
+    grapheme_clusters("\u{0600}\u{0915}\u{094D}\u{0924}").should eq(["\u{0600}\u{0915}\u{094D}\u{0924}"])
+  end
+
+  it "knows the Prepend code points newer than Unicode 12" do
+    grapheme_clusters("\u{113D1}a").should eq(["\u{113D1}a"])
   end
 end

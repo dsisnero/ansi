@@ -158,7 +158,8 @@ mattn/go-runewidth          0.0.27
   so no shard bump was available.
 - [x] Superseded during follow-up: width now vendors `displaywidth` v0.11.0 and
   `go-runewidth` v0.0.27 tables directly; `uniwidth`/`unicode_width` were
-  removed, while `textseg` remains a direct dependency for grapheme splitting.
+  removed. `textseg` was later replaced as well by the vendored uax29 splitter
+  (`src/gcb.cr` + `src/grapheme.cr`), so the shard is no longer a dependency.
 - [x] No direct port of `go.mod`/`go.sum`; only behavior-affecting differences
   matter.
 
