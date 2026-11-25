@@ -135,3 +135,77 @@ describe "Ansi.each_grapheme_cluster" do
     end
   end
 end
+
+# `first_grapheme_cluster` used to hand the whole remaining string to
+# `TextSegment.graphemes` for every cluster, so walking a string cost O(n²):
+# 475 bytes took 14 ms, 1.9 KB took 477 ms and 3.8 KB took 3.5 s. Consumers that
+# measure as they draw (`StyledString`) and the input decoders pay that per
+# frame or per read, so the segmentation must only look at the cluster it
+# needs.
+describe "grapheme cluster segmentation cost" do
+  # Long enough for the quadratic shape to dominate (3000 clusters), short
+  # enough to stay instant when linear. The bound is ~60x the linear cost and
+  # ~12x below the quadratic one on the machine this was written on.
+  bounded = "héllo wörld 😃 " * 200
+
+  it "segments a long string in linear time" do
+    elapsed = Time.measure do
+      Ansi.each_grapheme_cluster(bounded) { |_cluster, _width| }
+    end
+    elapsed.should be < 400.milliseconds
+  end
+
+  it "decodes a long buffer in linear time" do
+    bytes = bounded.to_slice
+    elapsed = Time.measure do
+      remaining = bytes
+      while remaining.size > 0
+        _seq, _width, taken, _state = Ansi.decode_sequence(remaining, 0_u8)
+        break if taken <= 0
+        remaining = remaining[taken, remaining.size - taken]
+      end
+    end
+    elapsed.should be < 400.milliseconds
+  end
+
+  # `Ansi.string_width` is the entry point the quadratic behaviour was reported
+  # against, and it pays the per-cluster cost for every printable byte, so an
+  # ASCII document is the worst case: 8 000 characters took ~50 s before the
+  # fix. Printable ASCII cannot start a multi-code-point cluster, so the ASCII
+  # hot path keeps this near a millisecond while the general path still
+  # segments.
+  it "measures a long ASCII string without segmenting every byte" do
+    elapsed = Time.measure do
+      Ansi.string_width("a" * 8_000).should eq(8_000)
+    end
+    elapsed.should be < 100.milliseconds
+  end
+
+  # The segmentation must not change while it gets cheaper: a cluster longer
+  # than the lookahead window, and clusters that only a full UAX #29 pass gets
+  # right.
+  it "keeps segmentation exact for clusters longer than the window" do
+    grapheme_clusters("👨‍👩‍👧‍👦a").should eq(["👨‍👩‍👧‍👦", "a"])
+    grapheme_clusters("🏳️‍🌈🏴󠁧󠁢󠁳󠁣󠁴󠁿z").should eq(["🏳️‍🌈", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "z"])
+    grapheme_clusters("स्तेabc").should eq(["स्ते", "a", "b", "c"])
+    grapheme_clusters("각z").should eq(["각", "z"])
+    grapheme_clusters("e\u0301e\u0301").should eq(["e\u0301", "e\u0301"])
+    # Control bytes occupy no cells, so the iterator does not yield them.
+    grapheme_clusters("\r\nx").should eq(["x"])
+    grapheme_clusters("🇯🇵🇺🇸").should eq(["🇯🇵", "🇺🇸"])
+  end
+
+  # The ASCII hot path must not cut a cluster that an ASCII byte starts: a
+  # combining mark or a spacing mark after ASCII still joins it, while a control
+  # byte still ends it.
+  it "keeps ASCII clusters exact next to non-ASCII code points" do
+    grapheme_clusters("a\u0301b").should eq(["a\u0301", "b"])
+    grapheme_clusters("a\u0903b").should eq(["a\u0903", "b"])
+    grapheme_clusters("a1b2").should eq(["a", "1", "b", "2"])
+    grapheme_clusters("a\tb").should eq(["a", "b"])
+    Ansi.string_width("a\u0301").should eq(1)
+    Ansi.string_width_wc("a\u0301").should eq(1)
+    Ansi.string_width("a1b2").should eq(4)
+    Ansi.string_width_wc("a1b2").should eq(4)
+  end
+end

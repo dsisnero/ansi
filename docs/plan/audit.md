@@ -288,7 +288,10 @@ that depends on Go's fused multiply-subtract behavior.
 - `Param.HasMore` [x] (Crystal: `ParserTransition.has_more`)
 - `FirstGraphemeCluster` [x] (Crystal: private `first_grapheme_cluster` for
   width, truncate, and wrap, plus the public `Ansi.each_grapheme_cluster`
-  whole-string iterator; UAX #29 GB9c via `src/incb.cr`)
+  whole-string iterator; UAX #29 GB9c via `src/incb.cr`. Find the first cluster
+  from a lookahead window instead of segmenting the whole remaining suffix, and
+  short-circuit printable ASCII, since the `textseg` shard decodes its entire
+  input up front; the Go version is lazy through `uax29`)
 
 ## parser_invalid_utf8_spec.cr
 (no upstream counterpart; characterization specs for the vendored parser's
@@ -537,7 +540,12 @@ vendored go-runewidth v0.0.27 tables and GraphemeWidth with vendored
 `displaywidth` v0.11.0 tables, plus UAX #29 GB9c conjunct joins from the
 vendored InCB tables in `src/incb.cr`. Crystal-only addition:
 `Ansi.each_grapheme_cluster` exposes the same segmentation, skipping escape
-sequences the way `stringWidth` does)
+sequences the way `stringWidth` does. Both are linear in the input: the first
+cluster comes from a 32-byte lookahead window that doubles for longer clusters,
+and printable ASCII followed by ASCII is a one-cell cluster without touching the
+segmenter, mirroring `uax29`'s ASCII hot path. The vendored Go source walks with
+`uax29`'s lazy iterator, so it never had the eager-segmentation cost the
+`textseg` shard introduces)
 
 ## width_test.go
 (no structs or methods)

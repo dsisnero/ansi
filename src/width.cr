@@ -219,27 +219,77 @@ module Ansi
     end
   end
 
+  # A cluster boundary only depends on the characters around it, so the first
+  # cluster can be found from a short prefix. Handing `TextSegment.graphemes`
+  # the whole remaining string on every call made walking a string quadratic:
+  # 475 bytes took 14 ms, 1.9 KB took 477 ms and 3.8 KB took 3.5 s, which
+  # `string_width`, `each_grapheme_cluster` and the input decoders all paid per
+  # call. Clusters are a few code points in practice, so the window starts small
+  # and doubles for the rare cluster that is longer (a long ZWJ emoji sequence,
+  # for example).
+  FIRST_CLUSTER_WINDOW = 32
+
+  # A boundary is only trusted when this many bytes of the window follow it: a
+  # UTF-8 code point is at most four bytes, so the character after the cluster
+  # is complete inside the window and the boundary cannot differ from the one a
+  # full-string pass would find.
+  FIRST_CLUSTER_LOOKAHEAD = 4
+
+  # UAX #29 only extends a cluster with Extend, ZWJ, SpacingMark, and the Indic
+  # conjunct, extended pictographic, and regional indicator continuations, none
+  # of which is ASCII (the one ASCII-pair rule, CR x LF, needs a CR first). So a
+  # printable ASCII byte followed by another ASCII byte is a one-cell cluster of
+  # its own. That is the same hot path github.com/clipperhouse/uax29's iterator
+  # takes, and it keeps ASCII (the common case for a document) clear of the
+  # segmenter entirely.
+  private def self.ascii_cluster?(bytes : Bytes, i : Int32) : Bool
+    byte = bytes[i]
+    return false unless 0x20 <= byte <= 0x7e
+
+    following = i + 1
+    following >= bytes.size || bytes[following] < 0x80
+  end
+
   private def self.first_grapheme_cluster(s : String, m : Method) : {String, Int32}
     return {"", 0} if s.empty?
 
-    clusters = TextSegment.graphemes(s)
-    return {"", 0} if clusters.empty?
+    # Printable ASCII is one cell under both methods, so no width lookup is
+    # needed here either.
+    return {s.byte_slice(0, 1), 1} if ascii_cluster?(s.to_slice, 0)
 
-    cluster_str = s.byte_slice(0, conjunct_cluster_end(clusters))
-    width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : DisplayWidth.grapheme_width(cluster_str)
-    {cluster_str, width}
+    window = Math.min(s.bytesize, FIRST_CLUSTER_WINDOW)
+    loop do
+      clusters = TextSegment.graphemes(s.byte_slice(0, window))
+      stop = clusters.empty? ? 0 : conjunct_cluster_end(clusters)
+      if window == s.bytesize || stop + FIRST_CLUSTER_LOOKAHEAD <= window
+        return {"", 0} if stop == 0
+
+        cluster_str = s.byte_slice(0, stop)
+        width = m == Method::WcWidth ? wc_cluster_width(cluster_str) : DisplayWidth.grapheme_width(cluster_str)
+        return {cluster_str, width}
+      end
+      window = Math.min(s.bytesize, window * 2)
+    end
   end
 
   private def self.first_grapheme_cluster(bytes : Bytes, m : Method) : {Bytes, Int32}
-    str = bytes_to_string(bytes)
-    return {Bytes.empty, 0} if str.empty?
+    return {Bytes.empty, 0} if bytes.empty?
 
-    clusters = TextSegment.graphemes(str)
-    return {Bytes.empty, 0} if clusters.empty?
+    return {bytes[0, 1], 1} if ascii_cluster?(bytes, 0)
 
-    cluster_bytes = bytes[0, conjunct_cluster_end(clusters)]
-    width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
-    {cluster_bytes, width}
+    window = Math.min(bytes.size, FIRST_CLUSTER_WINDOW)
+    loop do
+      clusters = TextSegment.graphemes(bytes_to_string(bytes[0, window]))
+      stop = clusters.empty? ? 0 : conjunct_cluster_end(clusters)
+      if window == bytes.size || stop + FIRST_CLUSTER_LOOKAHEAD <= window
+        return {Bytes.empty, 0} if stop == 0
+
+        cluster_bytes = bytes[0, stop]
+        width = m == Method::WcWidth ? wc_cluster_width(cluster_bytes) : DisplayWidth.grapheme_width(cluster_bytes)
+        return {cluster_bytes, width}
+      end
+      window = Math.min(bytes.size, window * 2)
+    end
   end
 
   private def self.grapheme_cluster_width(cluster : TextSegment::Grapheme::Cluster) : Int32

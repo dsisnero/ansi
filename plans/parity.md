@@ -13,22 +13,34 @@ micro-commits.
 
 - **Current focus:** maintenance. Every upstream file in the pinned checkout
   has a Crystal counterpart, and the audit ledger has no unchecked rows. The
-  last feature exposed the width segmentation as `Ansi.each_grapheme_cluster`
-  and made the GB9c conjunct merge exact.
+  last feature removed the quadratic cost in the per-cluster path:
+  `first_grapheme_cluster` now segments a lookahead window instead of the whole
+  remaining suffix (the `textseg` shard's `Graphemes#initialize` decodes all of
+  its input), and printable ASCII short-circuits without segmentation like
+  `uax29`'s own hot path. `Ansi.string_width` on 8 000 ASCII characters went
+  from ~50 s to ~1 ms, and a 3.2 KB mixed string from 6.3 s to 45 ms.
 - **Next up:**
   1. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
      coherent feature. This is expected to be a no-op while `main` remains
      `cb897cb`.
-  2. Extend differential characterization coverage as upstream dependency
+  2. Close the remaining segmentation divergence: the `textseg` shard breaks
+     `GB9b` between two `Prepend` code points (`U+0600 U+0600`), which `uax29`
+     keeps in one cluster. Found by the lookahead differential below; 2 of
+     7 571 cases. Fixing it means either extending the shard's GB9b table locally
+     or folding the prepend run in `first_grapheme_cluster`, the way GB9c is
+     folded.
+  3. Extend differential characterization coverage as upstream dependency
      tables advance. Non-GB9c grapheme properties still come from the
      `textseg` shard, which classifies U+0B53 and U+0B54 (unassigned in
      Oriya) as Extend where uax29 does not.
 - **Status by area:**
   - Core ANSI sequences and parser: ported.
-  - Width measurement: ported; GraphemeWidth uses vendored displaywidth v0.11.0
-    tables and WcWidth uses vendored go-runewidth v0.0.27 tables. UAX #29 GB9c
-    conjunct segmentation uses vendored InCB tables, and
-    `Ansi.each_grapheme_cluster` exposes it to consumers.
+  - Width measurement: ported, and linear in the input. GraphemeWidth uses
+    vendored displaywidth v0.11.0 tables and WcWidth uses vendored go-runewidth
+    v0.0.27 tables. UAX #29 GB9c conjunct segmentation uses vendored InCB
+    tables, and `Ansi.each_grapheme_cluster` exposes it to consumers. The
+    first cluster of a suffix is found from a 32-byte lookahead window (doubling
+    for longer clusters) and printable ASCII never reaches the segmenter.
   - Colors and conversions: ported.
   - Kitty, iTerm2, and Sixel graphics: ported.
   - Program Status Protocol (OSC 7501): ported from `ansi/v0.11.9`.
@@ -56,15 +68,28 @@ micro-commits.
     rounding, not the Crystal `colorful` shard.
   - `Convert256` uses `Math.fma` to reproduce Go's fused channel arithmetic at
     cube boundaries.
+  - The lookahead fix was verified against the vendored Go source three ways:
+    7 571 curated/random cases (Indic conjuncts, ZWJ families, tag flags, Hangul,
+    RI pairs, escapes, long clusters) and 3 263 invalid-UTF-8 cases produce
+    byte-identical `string_width`, `string_width_wc`, and cluster lists before
+    and after the change; against Go's `StringWidth`/`FirstGraphemeCluster` walk
+    only the 2 `Prepend`-run cases above differ. Go is linear here already
+    (its `uax29` iterator is lazy, and printable ASCII takes the iterator's hot
+    path), so the Crystal-side regression spec is a cost bound rather than an
+    output golden.
+  - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1 ms,
+    and 3 000 mixed clusters take ~45 ms in a debug build. The specs bound those
+    at 100 ms and 400 ms.
   - Sixel decoder differential fuzzing (200 randomized images) matches Go for
     raster bounds, out-of-bounds pixels, palette definitions, RLE, CR/LF, and
     RLE token consumption.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
-- **Last feature commit:** `port: decode invalid UTF-8 runes as U+FFFD`, which
-  follows the grapheme segmentation API commit.
+- **Last feature commit:** `port: segment the first grapheme cluster from a
+  lookahead window`, which makes the per-cluster path linear and adds the ASCII
+  hot path.
 - **Gates:** `make build`, `make format`, `make lint`, `make test` pass
-  (517 examples).
+  (523 examples).
 
 ## Phase 1 — Core ANSI and parser
 
@@ -85,6 +110,10 @@ micro-commits.
 - [x] Grapheme segmentation API: `Ansi.each_grapheme_cluster` yields clusters
       and widths from the same parser loop as `string_width`, backed by
       vendored Indic_Conjunct_Break tables so GB9c boundaries match Go
+- [x] Segmentation cost: the first cluster comes from a doubling lookahead
+      window and printable ASCII never reaches the segmenter, so `string_width`,
+      `each_grapheme_cluster`, `truncate`, `wrap`, and the input decoders are
+      linear (`ansi.1`)
 - [x] Color system: Convert256/Convert16 parity, transparency handling, Color
       conversion helpers, and hex rendering
 
