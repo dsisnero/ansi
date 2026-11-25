@@ -150,8 +150,9 @@ module Ansi
   class ClusterWalk
     getter bytes : Bytes
     getter method : Method
+    getter? incb : Bool
 
-    def initialize(@bytes : Bytes, @method : Method)
+    def initialize(@bytes : Bytes, @method : Method, @incb : Bool = true)
     end
   end
 
@@ -161,7 +162,7 @@ module Ansi
   # splitter restarts at *offset* exactly as Go's per-cluster
   # `FirstGraphemeCluster` does.
   def self.next_cluster(walk : ClusterWalk, offset : Int32) : {Bytes, Int32}
-    first_grapheme_cluster(walk.bytes, offset, walk.method)
+    first_grapheme_cluster(walk.bytes, offset, walk.method, walk.incb?)
   end
 
   private def self.cluster_width(cluster_bytes : Bytes, m : Method) : Int32
@@ -175,14 +176,14 @@ module Ansi
   # katakana string took ~4.8 s in `each_grapheme_cluster`, ~1.6 s in
   # `cut`/`truncate` and ~0.8 s in `string_width`. Reading from the offset
   # copies only the cluster, so every walk is O(n).
-  private def self.first_grapheme_cluster(bytes : Bytes, offset : Int32, m : Method) : {Bytes, Int32}
+  private def self.first_grapheme_cluster(bytes : Bytes, offset : Int32, m : Method, incb : Bool = true) : {Bytes, Int32}
     return {Bytes.empty, 0} if offset < 0 || offset >= bytes.size
 
     # Printable ASCII is one cell under both methods, so no width lookup is
     # needed here either.
     return {bytes[offset, 1], 1} if ascii_cluster?(bytes, offset)
 
-    stop = Grapheme.cluster_end(bytes, offset)
+    stop = Grapheme.cluster_end(bytes, offset, incb)
     return {Bytes.empty, 0} if stop <= offset
 
     cluster_bytes = bytes[offset, stop - offset]
@@ -205,11 +206,11 @@ module Ansi
   # Summing the yielded widths gives [string_width] for the same string, and
   # the yielded clusters concatenate to `strip(s)`: escape bytes are not
   # yielded, since they occupy no cells.
-  def self.each_grapheme_cluster(s : String, m : Method = Method::WcWidth, & : String, Int32 ->) : Nil
+  def self.each_grapheme_cluster(s : String, m : Method = Method::WcWidth, incb : Bool = true, & : String, Int32 ->) : Nil
     bytes = s.to_slice
     pstate = ParserTransition::GroundState
     i = 0
-    walk = ClusterWalk.new(bytes, m)
+    walk = ClusterWalk.new(bytes, m, incb)
 
     while i < bytes.size
       state, action = ParserTransition::Table.transition(pstate, bytes[i])

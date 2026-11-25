@@ -15,6 +15,12 @@ private def grapheme_clusters(s : String, method : Ansi::Method = Ansi::Method::
   clusters
 end
 
+private def clusters_with_mode(s : String, incb : Bool) : Array(String)
+  clusters = [] of String
+  Ansi.each_grapheme_cluster(s, Ansi::Method::WcWidth, incb: incb) { |cluster, _w| clusters << cluster }
+  clusters
+end
+
 private def grapheme_cluster_widths(s : String, method : Ansi::Method = Ansi::Method::WcWidth) : Hash(String, Int32)
   widths = {} of String => Int32
   Ansi.each_grapheme_cluster(s, method) { |cluster, width| widths[cluster] = width }
@@ -329,5 +335,41 @@ describe "grapheme cluster segmentation with Prepend" do
 
   it "knows the Prepend code points newer than Unicode 12" do
     grapheme_clusters("\u{113D1}a").should eq(["\u{113D1}a"])
+  end
+end
+
+# Terminal input decoders do not use UAX #29 with GB9c: Go's decoder family
+# (`rivo/uniseg`) predates the rule, so a virama ends its segment and a
+# Devanagari conjunct arrives as two keys. Width measurement must keep the join.
+# `incb: false` gives the decoder the uniseg boundary without a second segmenter.
+describe "grapheme cluster segmentation without GB9c" do
+  it "splits a conjunct at the virama, like uniseg" do
+    clusters_with_mode("स्ते", incb: false).should eq(["स्", "ते"])
+    clusters_with_mode("स्ते", incb: true).should eq(["स्ते"])
+  end
+
+  it "still measures the conjunct as one cluster" do
+    # WcWidth sums code points, so the joined cluster is two cells; GraphemeWidth
+    # treats it as the single glyph the displaywidth tables give it.
+    Ansi.string_width_wc("स्ते").should eq(2)
+    Ansi.string_width("स्ते").should eq(1)
+    clusters_with_mode("स्ते", incb: true).size.should eq(1)
+  end
+
+  it "leaves the other joining rules untouched" do
+    clusters_with_mode("👨‍👩‍👧‍👦a", incb: false).should eq(["👨‍👩‍👧‍👦", "a"])
+    clusters_with_mode("🇯🇵🇺🇸", incb: false).should eq(["🇯🇵", "🇺🇸"])
+    clusters_with_mode("e\u0301e\u0301", incb: false).should eq(["e\u0301", "e\u0301"])
+    clusters_with_mode("각z", incb: false).should eq(["각", "z"])
+    clusters_with_mode("\r\nx", incb: false).should eq(["x"])
+  end
+
+  it "segments the same bytes the same way through the low-level splitter" do
+    bytes = "स्ते".to_slice
+    first_end = Ansi::Grapheme.cluster_end(bytes, 0, incb: false)
+    second_end = Ansi::Grapheme.cluster_end(bytes, first_end, incb: false)
+    bytes[0, first_end].hexstring.should eq("e0a4b8e0a58d")
+    bytes[first_end, second_end - first_end].hexstring.should eq("e0a4a4e0a587")
+    Ansi::Grapheme.cluster_end(bytes, 0).should eq(bytes.size)
   end
 end

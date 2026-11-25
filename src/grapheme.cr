@@ -21,10 +21,16 @@ module Ansi
     # one `Next()` of uax29's iterator, which is also what Go's per-cluster
     # `FirstGraphemeCluster` runs.
     #
+    # Pass `incb: false` for the older, GB9c-free segmentation that
+    # `github.com/rivo/uniseg` (and therefore Go's input decoders) produces:
+    # without GB9c a virama ends its segment, so "\u0938\u094d\u0924\u0947" is
+    # two segments instead of one. Terminal decoders need that split to emit one
+    # key per code point sequence; width measurement needs the join.
+    #
     # The rule ladder is the behavior; folding it into helpers would obscure the
     # UAX #29 ordering, which is what decides a boundary.
     # ameba:disable Metrics/CyclomaticComplexity
-    def self.cluster_end(bytes : Bytes, offset : Int32) : Int32
+    def self.cluster_end(bytes : Bytes, offset : Int32, incb : Bool = true) : Int32
       size = bytes.size
       return offset if offset < 0 || offset >= size
 
@@ -37,7 +43,7 @@ module Ansi
       last_ex_ignore = 0_u32
       last_last_ex_ignore = 0_u32
       regional_run = 0
-      incb = IncbState::None
+      incb_state = IncbState::None
 
       while pos < size
         last = current
@@ -46,7 +52,7 @@ module Ansi
           last_last_ex_ignore = last_ex_ignore
           last_ex_ignore = last
         end
-        incb = fold_incb(incb, last)
+        incb_state = fold_incb(incb_state, last) if incb
 
         current, width = GCB.lookup(bytes, pos)
         return size if width == 0
@@ -99,9 +105,9 @@ module Ansi
           next
         end
 
-        # GB9c
-        if incb.linker? && (current & GCB::InCBConsonant) != 0
-          incb = IncbState::Consonant
+        # GB9c (skipped in the GB9c-free/uniseg mode)
+        if incb && incb_state.linker? && (current & GCB::InCBConsonant) != 0
+          incb_state = IncbState::Consonant
           pos += width
           next
         end

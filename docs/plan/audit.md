@@ -291,7 +291,9 @@ that depends on Go's fused multiply-subtract behavior.
   `Ansi.each_grapheme_cluster` whole-string iterator. Segmentation is the
   vendored UAX #29 splitter: `src/gcb.cr` holds uax29's property ranges and
   `src/grapheme.cr` its GB3-GB13 rule ladder, so a boundary is the one the Go
-  dependency finds; printable ASCII short-circuits with no segmentation)
+  dependency finds; printable ASCII short-circuits with no segmentation.
+  `incb: false` reproduces `rivo/uniseg`'s GB9c-free boundaries for terminal
+  input decoders, which split a conjunct at the virama)
 
 ## parser_invalid_utf8_spec.cr
 (no upstream counterpart; characterization specs for the vendored parser's

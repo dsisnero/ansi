@@ -239,3 +239,10 @@ micro-commits.
   to the caller. The Crystal helper walks the whole string with the same parser
   loop as `string_width`, skips escape sequences, and yields each cluster with
   its width so segmentation and measurement cannot drift apart.
+- `Ansi.each_grapheme_cluster` and `Ansi::Grapheme.cluster_end` accept
+  `incb:` (default `true`). `incb: false` reproduces `github.com/rivo/uniseg`,
+  which Go's terminal input decoders use: without GB9c a virama ends its
+  segment, so `"स्ते"` is `"स्"` + `"ते"` and a decoder can emit one key per
+  segment. Measurement keeps GB9c (`string_width_wc` is 2 cells for the joined
+  cluster). The mode exists so a consumer can segment for parsing and for width
+  from one implementation instead of pulling in a second segmenter shard.
