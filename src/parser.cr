@@ -232,7 +232,8 @@ module Ansi
           @data_len += 1
         end
       when ParserTransition::DispatchAction
-        if (@params_len > 0 && @params_len < @params.size - 1) ||
+        # Saturate at capacity, matching `DecodeSequence` (upstream `c957a7d`).
+        if (@params_len > 0 && @params_len < @params.size) ||
            (@params_len == 0 && @params.size > 0 && @params[0] != ParserTransition::MissingParam)
           @params_len += 1
         end

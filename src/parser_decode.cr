@@ -119,8 +119,10 @@ module Ansi
           state = ParamsState
           next
         when ParamsState
+          # Parameter writes stop at capacity: a sequence can carry more
+          # parameters than the parser was sized for (upstream `c957a7d`).
           if c >= '0'.ord && c <= '9'.ord
-            if p
+            if p && p.params_len < p.params.size
               if p.params[p.params_len] == ParserTransition::MissingParam
                 p.params[p.params_len] = 0
               end
@@ -132,11 +134,11 @@ module Ansi
           end
 
           if c == ':'.ord
-            p.params[p.params_len] |= ParserTransition::HasMoreFlag if p
+            p.params[p.params_len] |= ParserTransition::HasMoreFlag if p && p.params_len < p.params.size
           end
 
           if c == ';'.ord || c == ':'.ord
-            if p
+            if p && p.params_len < p.params.size
               p.params_len += 1
               p.params[p.params_len] = ParserTransition::MissingParam if p.params_len < p.params.size
             end
@@ -157,7 +159,9 @@ module Ansi
           end
 
           if p
-            if (p.params_len > 0 && p.params_len < p.params.size - 1) ||
+            # Saturate at capacity (was `size - 1`, which left the last slot
+            # unused and disagreed with `Parser#advance`).
+            if (p.params_len > 0 && p.params_len < p.params.size) ||
                (p.params_len == 0 && p.params.size > 0 && p.params[0] != ParserTransition::MissingParam)
               p.params_len += 1
             end

@@ -7,9 +7,9 @@
 
 Crystal port of `charmbracelet/x/ansi` (Go) from
 [charmbracelet/x](https://github.com/charmbracelet/x), vendored at `vendor/x/ansi`
-(commit `cb897cb`). The Go implementation is the source of truth. The port also
-tracks newer upstream files when a feature is requested, for example OSC 7501
-program status from `ansi/v0.11.9`.
+(commit `8aab43e`, tag `ansi/v0.11.10`). The Go implementation is the source of
+truth. The port also tracks newer upstream files when a feature is requested,
+for example OSC 7501 program status from `ansi/v0.11.9`.
 
 ## Commands
 
@@ -117,7 +117,7 @@ must be committed as **one** atomic commit before starting the next feature:
 ### Commit message
 
 Start with `port:` and a one-line feature name, then bullets for what changed,
-then the upstream revision (`charmbracelet/x` `cb897cb`, or the newer tag used
+then the upstream revision (`charmbracelet/x` `8aab43e`, or the newer tag used
 for the feature). Include new/changed files, divergences, and gate results so a
 new session can resume from the commit alone.
 

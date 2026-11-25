@@ -504,3 +504,102 @@ describe "Ansi.decode_sequence" do
     end
   end
 end
+
+# Ported from `ansi/parser_decode_test.go` at upstream `8aab43e` (`c957a7d`,
+# "bound DecodeSequence parameter collection"). A sequence may carry more
+# parameters than the parser was sized for, and the decode used to write
+# `params[params_len]` past the end of the array.
+describe "Ansi.decode_sequence parameter limit" do
+  it "saturates parameters at the configured size" do
+    max = Ansi::ParserTransition::MaxParamsSize
+    {0, 1, 2, max}.each do |size|
+      {1, size, size + 1, size + 3}.each do |count|
+        next if count < 1
+
+        {";", ":"}.each do |separator|
+          {"\e[", "\x9b", "\eP", "\x90"}.each do |prefix|
+            parser = Ansi::Parser.new
+            parser.set_params_size(size)
+
+            values = (0...count).map { |i| (i + 1).to_s }
+            input = String.build do |io|
+              io << prefix
+              io << values.join(separator)
+              io << 'm'
+              io << "data\e\\" if prefix == "\eP" || prefix == "\x90"
+            end
+
+            seq, width, n, state = Ansi.decode_sequence(input, Ansi::ParserTransition::GroundState, parser)
+            seq.should eq(input)
+            width.should eq(0)
+            n.should eq(input.bytesize)
+            state.should eq(Ansi::ParserTransition::GroundState)
+
+            kept = Math.min(size, count)
+            parser.params_len.should eq(kept)
+            parser.params[0, parser.params_len].each_with_index do |value, i|
+              want = i + 1
+              # `:` marks every parameter but the last as having more subparams.
+              want |= Ansi::ParserTransition::HasMoreFlag if separator == ":" && i < count - 1
+              value.should eq(want)
+            end
+
+            # The parser must be reusable for the text that follows.
+            seq, width, n, state = Ansi.decode_sequence("x", state, parser)
+            seq.should eq("x")
+            width.should eq(1)
+            n.should eq(1)
+            state.should eq(Ansi::ParserTransition::GroundState)
+            parser.params_len.should eq(0)
+          end
+        end
+      end
+    end
+  end
+
+  it "keeps the streaming parser and DecodeSequence in agreement at the limit" do
+    max = Ansi::ParserTransition::MaxParamsSize
+    {max - 1, max, max + 1}.each do |count|
+      input = "\e[" + (["1"] * count).join(";") + "m"
+
+      decoded = Ansi::Parser.new
+      Ansi.decode_sequence(input, Ansi::ParserTransition::GroundState, decoded)
+
+      streamed = Ansi::Parser.new
+      input.each_byte { |byte| streamed.advance(byte) }
+
+      want = Math.min(count, max)
+      decoded.params_len.should eq(want)
+      streamed.params_len.should eq(want)
+    end
+  end
+
+  it "bounds parameters when an overflowing sequence is split across reads" do
+    max = Ansi::ParserTransition::MaxParamsSize
+    input = ("\e[" + ("1;" * max) + "2:3;;m").to_slice
+
+    decoders = {
+      "grapheme" => ->(b : Bytes, st : UInt8, parser : Ansi::Parser) { Ansi.decode_sequence(b, st, parser) },
+      "wc"       => ->(b : Bytes, st : UInt8, parser : Ansi::Parser) { Ansi.decode_sequence_wc(b, st, parser) },
+    }
+
+    decoders.each do |name, decode|
+      (2...input.size).each do |split|
+        parser = Ansi::Parser.new
+        _, _, n, state = decode.call(input[0, split], Ansi::ParserTransition::GroundState, parser)
+        n.should eq(split)
+
+        rest = input[split, input.size - split]
+        seq, width, n, state = decode.call(rest, state, parser)
+        seq.should eq(rest), "#{name} split=#{split}"
+        width.should eq(0), "#{name} split=#{split}"
+        n.should eq(rest.size), "#{name} split=#{split}"
+        state.should eq(Ansi::ParserTransition::GroundState), "#{name} split=#{split}"
+        parser.params_len.should eq(max), "#{name} split=#{split}"
+        parser.params[0, parser.params_len].each_with_index do |value, i|
+          value.should eq(1), "#{name} split=#{split} param=#{i}"
+        end
+      end
+    end
+  end
+end

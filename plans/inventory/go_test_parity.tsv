@@ -116,10 +116,16 @@ parser_decode_test.go::function::BenchmarkDecodeSequence	missing	-	baseline
 parser_decode_test.go::function::FuzzDecodeSequence	missing	-	baseline
 parser_decode_test.go::function::TestCommand	missing	-	baseline
 parser_decode_test.go::function::TestDecodeSequence	missing	-	baseline
+parser_decode_test.go::function::TestDecodeSequenceParameterLimit	missing	-	baseline
+parser_decode_test.go::function::TestDecodeSequenceParameterOverflowStreaming	missing	-	baseline
 parser_decode_test.go::function::TestParameter	missing	-	baseline
+parser_decode_test.go::function::TestParserMatchesDecodeSequenceAtParameterLimit	missing	-	baseline
 parser_decode_test.go::test::TestCommand	missing	-	baseline
 parser_decode_test.go::test::TestDecodeSequence	missing	-	baseline
+parser_decode_test.go::test::TestDecodeSequenceParameterLimit	missing	-	baseline
+parser_decode_test.go::test::TestDecodeSequenceParameterOverflowStreaming	missing	-	baseline
 parser_decode_test.go::test::TestParameter	missing	-	baseline
+parser_decode_test.go::test::TestParserMatchesDecodeSequenceAtParameterLimit	missing	-	baseline
 parser_esc_test.go::function::TestEscSequence	missing	-	baseline
 parser_esc_test.go::test::TestEscSequence	missing	-	baseline
 parser_osc_test.go::const::maxBufferSize	missing	-	baseline

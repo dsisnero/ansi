@@ -1,5 +1,9 @@
 # Upstream Refresh — ansi `eeb2896` → `cb897cb`
 
+> **Superseded:** the current pin and refresh checklist live in
+> [upstream-refresh-8aab43e.md](upstream-refresh-8aab43e.md). This file is kept
+> as the history of the previous bump.
+
 Vendor refresh plan for the Crystal port. The submodule was not at upstream
 `main`: the previous pin was `eeb2896` (2026-02-09) and the latest upstream
 `main` is `cb897cb` (2026-10-18). The submodule has been moved to `cb897cb`;

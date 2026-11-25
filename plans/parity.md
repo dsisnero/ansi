@@ -11,18 +11,17 @@ micro-commits.
 
 ## Where we are
 
-- **Current focus:** maintenance plus parity-tooling adoption. Every upstream
-  file in the pinned checkout has a Crystal counterpart and the hand-verified
-  audit ledger has no unchecked rows. The last feature removed the quadratic
-  cost in the per-cluster path: `first_grapheme_cluster` now segments a lookahead
-  window instead of the whole remaining suffix (the `textseg` shard's
-  `Graphemes#initialize` decodes all of its input), and printable ASCII
-  short-circuits without segmentation like `uax29`'s own hot path.
-  `Ansi.string_width` on 8 000 ASCII characters went from ~50 s to ~1 ms, and a
-  3.2 KB mixed string from 6.3 s to 45 ms. The machine-checked ledger was then
-  bootstrapped; curating it is the open work. The upstream checkout also moved to
-  the repository-standard `vendor/x` submodule path (`vendor/x/ansi`), which is
-  what every document and the parity tooling now reference.
+- **Current focus:** maintenance. Every upstream file in the pinned checkout has
+  a Crystal counterpart and the hand-verified audit ledger has no unchecked rows.
+  The port is now pinned to upstream `8aab43e` (`ansi/v0.11.10`), whose only
+  `ansi/` change since `cb897cb` was a bounds fix in `DecodeSequence`: parameter
+  writes are guarded and the count saturates at the configured capacity
+  (`plans/upstream-refresh-8aab43e.md`). Before that, the per-cluster path went
+  linear — `first_grapheme_cluster` measures from a lookahead window, printable
+  ASCII never reaches the segmenter, and the walkers hand it a bounded chunk
+  instead of the remaining suffix: `Ansi.string_width` on 8 000 ASCII characters
+  went from ~50 s to ~1 ms, and a 99 KB non-ASCII string from ~4.8 s to ~94 ms.
+  The machine-checked ledger was bootstrapped; curating it is the open work.
 - **Next up:**
   1. Curate `plans/inventory/go_port_inventory.tsv`. Reconciliation with no
      rules maps 618 source entities (317 matched, 81 ambiguous, 220 unmapped),
@@ -34,8 +33,10 @@ micro-commits.
      move the `docs/plan/audit.md` rows into the ledger one area at a time,
      starting with `width.go` / `wcwidth.go` / `parser_decode.go`.
   2. Re-audit `vendor/x/ansi` against upstream `main` and port any new behavior
-     as one coherent feature. This is expected to be a no-op while `main`
-     remains `cb897cb`.
+     as one coherent feature, following the pattern of
+     `plans/upstream-refresh-8aab43e.md`. A no-op while `main` remains
+     `8aab43e`; check `git -C vendor/x log --oneline 8aab43e..origin/main -- ansi`
+     first.
   3. Close the remaining segmentation divergence: the `textseg` shard breaks
      `GB9b` between two `Prepend` code points (`U+0600 U+0600`), which `uax29`
      keeps in one cluster. Found by the lookahead differential below; 2 of
@@ -74,18 +75,20 @@ micro-commits.
     curated: its rows are all `missing`, so it is a to-do list, not a coverage
     claim.
 - **Scoping notes / gotchas:**
-  - The vendored submodule is pinned at `cb897cb` (2026-10-18) and lives at
-    `vendor/x` (the `charmbracelet/x` monorepo; only `ansi/` is ported). The
-    refresh checklist and exact diff are in
-    `plans/upstream-refresh-cb897cb.md`.
+  - The vendored submodule is pinned at `8aab43e` (2026-11-22, tag
+    `ansi/v0.11.10`) and lives at `vendor/x` (the `charmbracelet/x` monorepo;
+    only `ansi/` is ported). The current refresh checklist and exact diff are in
+    `plans/upstream-refresh-8aab43e.md`; `plans/upstream-refresh-cb897cb.md` is
+    the previous refresh, kept for history.
   - `spec/array_validation_spec.cr` anchors the Go source path to `__DIR__`. It
     used to say `../x/ansi/color.go`, which resolves outside the repo whenever
     the suite runs from the root, so both constant-array validations silently
     skipped; the hex parser then also rejected Go's `0x`-prefixed literals. Both
     are fixed, and the spec now compares 256 `ANSI_HEX` and 256 `ANSI256_TO_16`
     entries against `color.go` on every `make test`.
-  - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
-    (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
+  - The latest `ansi` tag is `ansi/v0.11.10` (`ee8f503`), one `powernap` chore
+    below the pin; `ansi/` is identical between them. The pin is the tip of
+    upstream `main`, so a re-audit is now a no-op until `main` moves again.
   - Width classification uses vendored displaywidth v0.11.0 tables for
     GraphemeWidth and go-runewidth v0.0.27 tables for WcWidth. Single-codepoint
     differential vs Go over U+0000..U+1FFFF is 0 grapheme mismatches and 0
@@ -111,7 +114,10 @@ micro-commits.
     output golden.
   - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1 ms,
     and 3 000 mixed clusters take ~45 ms in a debug build. The specs bound those
-    at 100 ms and 400 ms.
+    at 100 ms and 400 ms. On a 99 KB katakana string (`"あ" * 33_000`) the walks
+    are ~65 ms (`string_width`), ~94 ms (`each_grapheme_cluster`) and ~113 ms
+    (`cut`/`truncate`); two specs bound the walk and the measure/slice mix at
+    500 ms each.
   - Sixel decoder differential fuzzing (200 randomized images) matches Go for
     raster bounds, out-of-bounds pixels, palette definitions, RLE, CR/LF, and
     RLE token consumption.
@@ -122,11 +128,12 @@ micro-commits.
     hand-verified but not validated by tooling. Until the ledger is curated, a
     `make parity` pass means "no drift against the pinned checkout", not "every
     declaration is ported".
-- **Last feature commit:** `chore: move the upstream checkout to vendor/x` (follows
-  `chore: adopt the parity inventory tooling` and the linear-time segmentation
-  port).
-- **Gates:** `make build`, `make format`, `make lint`, `make test` (523
-  examples), and `make parity` (1 314 declarations, 269 tests) pass.
+- **Last feature commit:** `port: bound DecodeSequence parameters` on top of
+  `chore: move the upstream checkout to vendor/x`; it follows the linear-time
+  segmentation port and the parity-tooling adoption.
+- **Gates:** `make build`, `make format`, `make lint`, `make test` (528
+  examples), and `make parity` (1 314 declarations, 1 314 API items, 275 tests)
+  pass.
 
 ## Phase 1 — Core ANSI and parser
 
@@ -138,6 +145,9 @@ micro-commits.
 - [x] Parser invalid UTF-8: `Parser#rune` decodes the collected bytes with
       U+FFFD substitution like Go's `utf8.DecodeRune`, with characterization
       specs verified against the vendored parser
+- [x] Parser parameter bounds: `DecodeSequence` guards parameter writes and
+      saturates the count at the configured capacity, and the streaming parser
+      agrees with it (`plans/upstream-refresh-8aab43e.md`)
 
 ## Phase 2 — Width and colors
 
@@ -169,8 +179,9 @@ micro-commits.
 - [x] `cb897cb` refresh: Wcwidth per codepoint, Kitty `Quiet`, and dependency
       audit
 - [x] Quality gates: build target and GitHub Actions CI
-- [ ] Re-audit upstream `main` and port any new behavior as one feature
-      (expected no-op while `main` is `cb897cb`)
+- [x] Re-audit upstream `main` and port any new behavior as one feature:
+      `cb897cb` → `8aab43e` was a single `ansi/` fix (bounded `DecodeSequence`
+      parameters), ported in `plans/upstream-refresh-8aab43e.md`
 - [x] Port/vendor `clipperhouse/displaywidth` tables for exact width parity
 - [x] Vendor go-runewidth tables for exact WcWidth parity
 - [x] CI hardening: supported-Crystal-version matrix and dependency caching
