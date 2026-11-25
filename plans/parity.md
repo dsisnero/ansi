@@ -121,13 +121,21 @@ micro-commits.
     input takes the rest of the buffer as the final cluster. `bytes_to_string`
     keeps those raw bytes in the yielded `String`, so a cluster's length and its
     measured width stay consistent.
-  - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~1.3 ms,
+  - `GCB.property` starts its range search from the 256-code-point page the code
+    point falls in (`PAGE_RANGES`): most pages hold one range, the worst 38.
+    That took the lookup from ~233 ns to ~115 ns and the 99 KB walk from ~621 ns
+    to ~452 ns per code point.
+  - Segmentation cost budget: `string_width` on 8 000 ASCII bytes is ~0.8 ms,
     and 3 000 mixed clusters take ~45 ms in a debug build. The specs bound those
     at 100 ms and 400 ms. On a 99 KB katakana string (`"あ" * 33_000`) the walks
-    are ~49 ms (`string_width`), ~103 ms (`each_grapheme_cluster`), ~95 ms
-    (`truncate`) and ~113 ms (`cut`); the cost specs bound the walk and the
-    measure/slice mix at 300 ms per operation. All of it is linear: the splitter
-    reads one code point at a time and never re-decodes the input.
+    are ~17 ms (`string_width`), ~43 ms (`each_grapheme_cluster`), ~33 ms
+    (`truncate`) and ~36 ms (`cut`); the cost specs bound the walk and the
+    measure/slice mix at 300 ms per operation. A single-code-point
+    `Grapheme.cluster_end` costs ~166 ns, against the ~10 µs fixed cost the
+    `textseg` shard paid per call, and the per-code-point cost is flat from 10 000
+    to 264 000 code points. Go's `StringWidth` does the same 99 KB in ~1.8 ms;
+    the remaining gap is Crystal-side constant factors (table access, bounds
+    checks, displaywidth lookups), not complexity.
   - Sixel decoder differential fuzzing (200 randomized images) matches Go for
     raster bounds, out-of-bounds pixels, palette definitions, RLE, CR/LF, and
     RLE token consumption.
