@@ -130,7 +130,7 @@ color.go::function::ansiToRGB	function	ported	src/color.cr	Crystal: ansi_to_rgb
 color.go::function::distSq	function	ported	src/color.cr	Crystal: dist_sq
 color.go::function::hexToRGB	function	ported	src/color.cr	Crystal: hex_to_rgb
 color.go::function::to6Cube	function	ported	src/color.cr	Crystal: to_6_cube
-color.go::function::toRGBA	function	missing	-	unresolved: needs a manual mapping
+color.go::function::toRGBA	function	ported	src/color.cr	Crystal: #rgba (8->16-bit expansion folded into each accessor)
 color.go::interface::Color	interface	ported	src/color.cr	Crystal: Color
 color.go::method::BasicColor.RGBA	method	ported	src/color.cr	Crystal: BasicColor#rgba
 color.go::method::IndexedColor.RGBA	method	ported	src/color.cr	Crystal: IndexedColor#rgba
@@ -234,8 +234,8 @@ hyperlink.go::function::SetHyperlink	function	ported	src/ansi.cr	Crystal: set_hy
 inband.go::function::InBandResize	function	ported	src/inband.cr	Crystal: in_band_resize
 iterm2.go::function::ITerm2	function	ported	src/ansi.cr	Crystal: iterm2
 iterm2/file.go::class::FileEnd	class	ported	src/iterm2.cr	Crystal: FileEnd
-iterm2/file.go::class::file	class	missing	-	unresolved: needs a manual mapping
-iterm2/file.go::const::Auto	const	missing	-	unresolved: needs a manual mapping
+iterm2/file.go::class::file	class	ported	src/iterm2.cr	Crystal: Iterm2::File
+iterm2/file.go::const::Auto	const	ported	src/iterm2.cr	Crystal: Iterm2::AUTO
 iterm2/file.go::function::Cells	function	ported	src/iterm2.cr	Crystal: cells
 iterm2/file.go::function::Percent	function	ported	src/iterm2.cr	Crystal: percent
 iterm2/file.go::function::Pixels	function	ported	src/iterm2.cr	Crystal: pixels
@@ -700,13 +700,13 @@ mouse.go::const::MouseWheelDown	const	ported	src/mouse.cr	Crystal: MouseWheelDow
 mouse.go::const::MouseWheelLeft	const	ported	src/mouse.cr	Crystal: MouseWheelLeft
 mouse.go::const::MouseWheelRight	const	ported	src/mouse.cr	Crystal: MouseWheelRight
 mouse.go::const::MouseWheelUp	const	ported	src/mouse.cr	Crystal: MouseWheelUp
-mouse.go::const::bitAdd	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitAlt	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitCtrl	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitMotion	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitShift	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitWheel	const	missing	-	unresolved: needs a manual mapping
-mouse.go::const::bitsMask	const	missing	-	unresolved: needs a manual mapping
+mouse.go::const::bitAdd	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitAlt	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitCtrl	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitMotion	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitShift	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitWheel	const	intentional_divergence	-	folded into the SGR encoder as local variables
+mouse.go::const::bitsMask	const	intentional_divergence	-	folded into the SGR encoder as local variables
 mouse.go::const::x10Offset	const	ported	src/mouse.cr	Crystal: X10Offset (Go private x10Offset)
 mouse.go::function::EncodeMouseButton	function	ported	src/mouse.cr	Crystal: encode_mouse_button
 mouse.go::function::MouseSgr	function	ported	src/mouse.cr	Crystal: mouse_sgr
@@ -822,7 +822,7 @@ parser_decode.go::function::HasSuffix	function	ported	src/parser_decode.cr	Cryst
 parser_decode.go::function::Parameter	function	ported	src/parser_decode.cr	Crystal: parameter
 parser_decode.go::function::decodeSequence	function	ported	src/parser_decode.cr	Crystal: decode_sequence
 parser_decode.go::function::parseOscCmd	function	ported	src/parser_decode.cr	Crystal: parse_osc_cmd
-parser_decode.go::method::Cmd.Final	method	missing	-	unresolved: needs a manual mapping
+parser_decode.go::method::Cmd.Final	method	ported	src/parser_transition.cr	Crystal: ParserTransition.command
 parser_decode.go::method::Cmd.Intermediate	method	ported	src/parser_transition.cr	Crystal: intermediate (owner mapped away)
 parser_decode.go::method::Cmd.Prefix	method	ported	src/parser_transition.cr	Crystal: prefix (owner mapped away)
 parser_decode.go::method::Param.HasMore	method	ported	src/parser_transition.cr	Crystal: has_more (owner mapped away)
@@ -854,8 +854,8 @@ programstatus.go::const::ProgramStatusKindAuth	const	ported	src/program_status.c
 programstatus.go::const::ProgramStatusKindPermission	const	ported	src/program_status.cr	Crystal: ProgramStatusKind::Permission
 programstatus.go::const::ProgramStatusKindQuestion	const	ported	src/program_status.cr	Crystal: ProgramStatusKind::Question
 programstatus.go::const::RequestProgramStatusSupport	const	ported	src/program_status.cr	Crystal: RequestProgramStatusSupport
-programstatus.go::const::programStatusMaxMessage	const	missing	-	unresolved: needs a manual mapping
-programstatus.go::const::programStatusMaxTitle	const	missing	-	unresolved: needs a manual mapping
+programstatus.go::const::programStatusMaxMessage	const	ported	src/program_status.cr	Crystal: PROGRAM_STATUS_MAX_MESSAGE
+programstatus.go::const::programStatusMaxTitle	const	ported	src/program_status.cr	Crystal: PROGRAM_STATUS_MAX_TITLE
 programstatus.go::function::ClearProgramStatusID	function	ported	src/program_status.cr	Crystal: clear_program_status_id
 programstatus.go::function::SetProgramStatus	function	ported	src/program_status.cr	Crystal: program_status=
 programstatus.go::function::programStatusSequence	function	ported	src/program_status.cr	Crystal: program_status_sequence
@@ -933,57 +933,57 @@ sixel/decoder.go::method::Decoder.readError	method	ported	src/sixel.cr	Crystal: 
 sixel/decoder.go::method::Decoder.scanSize	method	ported	src/sixel.cr	Crystal: Decoder#scan_size
 sixel/decoder.go::method::Decoder.writePixel	method	ported	src/sixel.cr	Crystal: Decoder#write_pixel
 sixel/encoder.go::class::Encoder	class	ported	src/kitty.cr	Crystal: Encoder
-sixel/encoder.go::class::sixelBuilder	class	missing	-	unresolved: needs a manual mapping
+sixel/encoder.go::class::sixelBuilder	class	ported	src/sixel.cr	Crystal: SixelBuilder
 sixel/encoder.go::const::CarriageReturn	const	ported	src/sixel.cr	Crystal: CarriageReturn
 sixel/encoder.go::const::ColorIntroducer	const	ported	src/sixel.cr	Crystal: ColorIntroducer
 sixel/encoder.go::const::LineBreak	const	ported	src/sixel.cr	Crystal: LineBreak
 sixel/encoder.go::const::RasterAttribute	const	ported	src/sixel.cr	Crystal: RasterAttribute
 sixel/encoder.go::const::RepeatIntroducer	const	ported	src/sixel.cr	Crystal: RepeatIntroducer
-sixel/encoder.go::function::newSixelBuilder	function	missing	-	unresolved: needs a manual mapping
+sixel/encoder.go::function::newSixelBuilder	function	ported	src/sixel.cr	Crystal: SixelBuilder (constructor)
 sixel/encoder.go::method::Encoder.Encode	method	ported	src/kitty.cr	Crystal: Encoder#encode
-sixel/encoder.go::method::Encoder.encodePaletteColor	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.BandHeight	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.GeneratePixels	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.SetColor	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.flushRepeats	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.writeControlRune	method	missing	-	unresolved: needs a manual mapping
-sixel/encoder.go::method::sixelBuilder.writeImageRune	method	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::class::quantizationCube	class	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::class::sixelColor	class	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::class::sixelPalette	class	missing	-	unresolved: needs a manual mapping
+sixel/encoder.go::method::Encoder.encodePaletteColor	method	ported	src/sixel.cr	Crystal: Encoder#encode (folded in)
+sixel/encoder.go::method::sixelBuilder.BandHeight	method	ported	src/sixel.cr	Crystal: SixelBuilder#band_height
+sixel/encoder.go::method::sixelBuilder.GeneratePixels	method	ported	src/sixel.cr	Crystal: SixelBuilder#generate_pixels
+sixel/encoder.go::method::sixelBuilder.SetColor	method	ported	src/sixel.cr	Crystal: SixelBuilder#set_color
+sixel/encoder.go::method::sixelBuilder.flushRepeats	method	ported	src/sixel.cr	Crystal: SixelBuilder#generate_pixels (folded in)
+sixel/encoder.go::method::sixelBuilder.writeControlRune	method	ported	src/sixel.cr	Crystal: SixelBuilder#write_control_rune
+sixel/encoder.go::method::sixelBuilder.writeImageRune	method	ported	src/sixel.cr	Crystal: SixelBuilder#write_image_rune
+sixel/palette.go::class::quantizationCube	class	ported	src/sixel.cr	Crystal: QuantizationCube
+sixel/palette.go::class::sixelColor	class	ported	src/sixel.cr	Crystal: SixelColor
+sixel/palette.go::class::sixelPalette	class	ported	src/sixel.cr	Crystal: Palette
 sixel/palette.go::const::MaxColors	const	ported	src/sixel.cr	Crystal: MaxColors
-sixel/palette.go::const::quantizationAlpha	const	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::const::quantizationBlue	const	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::const::quantizationGreen	const	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::const::quantizationRed	const	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::function::newSixelPalette	function	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::function::sixelConvertChannel	function	missing	-	unresolved: needs a manual mapping
+sixel/palette.go::const::quantizationAlpha	const	ported	src/sixel.cr	Crystal: QuantizationChannel::Alpha
+sixel/palette.go::const::quantizationBlue	const	ported	src/sixel.cr	Crystal: QuantizationChannel::Blue
+sixel/palette.go::const::quantizationGreen	const	ported	src/sixel.cr	Crystal: QuantizationChannel::Green
+sixel/palette.go::const::quantizationRed	const	ported	src/sixel.cr	Crystal: QuantizationChannel::Red
+sixel/palette.go::function::newSixelPalette	function	ported	src/sixel.cr	Crystal: new_palette
+sixel/palette.go::function::sixelConvertChannel	function	ported	src/sixel.cr	Crystal: convert_channel
 sixel/palette.go::function::sixelConvertColor	function	ported	src/sixel.cr	Crystal: sixel_convert_color
 sixel/palette.go::method::cubePriorityQueue.Len	method	ported	src/parser_transition.cr	Crystal: len (owner mapped away)
-sixel/palette.go::method::cubePriorityQueue.Less	method	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::method::cubePriorityQueue.Pop	method	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::method::cubePriorityQueue.Push	method	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::method::cubePriorityQueue.Swap	method	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::method::sixelPalette.ColorIndex	method	missing	-	unresolved: needs a manual mapping
+sixel/palette.go::method::cubePriorityQueue.Less	method	intentional_divergence	-	comparator is a Proc passed to MaxHeap#initialize
+sixel/palette.go::method::cubePriorityQueue.Pop	method	ported	src/sixel_heap.cr	Crystal: MaxHeap#pop
+sixel/palette.go::method::cubePriorityQueue.Push	method	ported	src/sixel_heap.cr	Crystal: MaxHeap#push
+sixel/palette.go::method::cubePriorityQueue.Swap	method	ported	src/sixel_heap.cr	Crystal: MaxHeap#swap
+sixel/palette.go::method::sixelPalette.ColorIndex	method	ported	src/sixel.cr	Crystal: Palette#color_index
 sixel/palette.go::method::sixelPalette.createCube	method	ported	src/sixel.cr	Crystal: create_cube (owner mapped away)
-sixel/palette.go::method::sixelPalette.loadColor	method	missing	-	unresolved: needs a manual mapping
+sixel/palette.go::method::sixelPalette.loadColor	method	ported	src/sixel.cr	Crystal: new_palette (folded in)
 sixel/palette.go::method::sixelPalette.quantize	method	ported	src/sixel.cr	Crystal: quantize (owner mapped away)
-sixel/palette.go::type::cubePriorityQueue	type	missing	-	unresolved: needs a manual mapping
-sixel/palette.go::type::quantizationChannel	type	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::decreasingHint	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::increasingHint	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::maxInsertion	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::maxSteps	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::maxSwaps	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::shortestNinther	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::shortestShifting	const	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::const::unknownHint	const	missing	-	unresolved: needs a manual mapping
+sixel/palette.go::type::cubePriorityQueue	type	ported	src/sixel_heap.cr	Crystal: MaxHeap
+sixel/palette.go::type::quantizationChannel	type	ported	src/sixel.cr	Crystal: QuantizationChannel
+sixel/palette_sort.go::const::decreasingHint	const	ported	src/sixel_palette_sort.cr	Crystal: SortedHint::Decreasing
+sixel/palette_sort.go::const::increasingHint	const	ported	src/sixel_palette_sort.cr	Crystal: SortedHint::Increasing
+sixel/palette_sort.go::const::maxInsertion	const	ported	src/sixel_palette_sort.cr	Crystal: MAX_INSERTION (Go camelCase -> UPPER_SNAKE)
+sixel/palette_sort.go::const::maxSteps	const	ported	src/sixel_palette_sort.cr	Crystal: MAX_STEPS (Go camelCase -> UPPER_SNAKE)
+sixel/palette_sort.go::const::maxSwaps	const	ported	src/sixel_palette_sort.cr	Crystal: MAX_SWAPS (Go camelCase -> UPPER_SNAKE)
+sixel/palette_sort.go::const::shortestNinther	const	ported	src/sixel_palette_sort.cr	Crystal: SHORTEST_NINTHER (Go camelCase -> UPPER_SNAKE)
+sixel/palette_sort.go::const::shortestShifting	const	ported	src/sixel_palette_sort.cr	Crystal: SHORTEST_SHIFTING (Go camelCase -> UPPER_SNAKE)
+sixel/palette_sort.go::const::unknownHint	const	ported	src/sixel_palette_sort.cr	Crystal: SortedHint::Unknown
 sixel/palette_sort.go::function::breakPatternsCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: break_patterns
 sixel/palette_sort.go::function::choosePivotCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: choose_pivot
-sixel/palette_sort.go::function::compare	function	missing	-	unresolved: needs a manual mapping
+sixel/palette_sort.go::function::compare	function	intentional_divergence	-	Crystal compares through the caller's cmp Proc; no float/NaN path
 sixel/palette_sort.go::function::heapSortCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: heap_sort
 sixel/palette_sort.go::function::insertionSortCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: insertion_sort
-sixel/palette_sort.go::function::isNaN	function	missing	-	unresolved: needs a manual mapping
+sixel/palette_sort.go::function::isNaN	function	intentional_divergence	-	no float scores in the port; NaN check is a Go generic concern
 sixel/palette_sort.go::function::medianAdjacentCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: median_adjacent
 sixel/palette_sort.go::function::medianCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: median
 sixel/palette_sort.go::function::nextPowerOfTwo	function	ported	src/sixel_palette_sort.cr	Crystal: next_power_of_two
@@ -994,11 +994,11 @@ sixel/palette_sort.go::function::partitionEqualCmpFunc	function	ported	src/sixel
 sixel/palette_sort.go::function::pdqsortCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: pdqsort
 sixel/palette_sort.go::function::reverseRangeCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: reverse_range
 sixel/palette_sort.go::function::siftDownCmpFunc	function	ported	src/sixel_palette_sort.cr	Crystal: sift_down
-sixel/palette_sort.go::function::sortFunc	function	missing	-	unresolved: needs a manual mapping
+sixel/palette_sort.go::function::sortFunc	function	intentional_divergence	-	Go generic type alias; Crystal passes Proc(T, T, Int32)
 sixel/palette_sort.go::interface::ordered	interface	intentional_divergence	-	Go generic constraint; Crystal duck types or uses Comparable
-sixel/palette_sort.go::method::xorshift.Next	method	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::type::sortedHint	type	missing	-	unresolved: needs a manual mapping
-sixel/palette_sort.go::type::xorshift	type	missing	-	unresolved: needs a manual mapping
+sixel/palette_sort.go::method::xorshift.Next	method	ported	src/sixel_palette_sort.cr	Crystal: Xorshift#next_value
+sixel/palette_sort.go::type::sortedHint	type	ported	src/sixel_palette_sort.cr	Crystal: SortedHint
+sixel/palette_sort.go::type::xorshift	type	ported	src/sixel_palette_sort.cr	Crystal: Xorshift
 sixel/raster.go::class::Raster	class	ported	src/sixel.cr	Crystal: Raster
 sixel/raster.go::function::DecodeRaster	function	ported	src/sixel.cr	Crystal: decode_raster
 sixel/raster.go::function::WriteRaster	function	ported	src/sixel.cr	Crystal: write_raster
@@ -1218,9 +1218,9 @@ style.go::const::underlineDotted	const	ported	src/style.cr	Crystal: UnderlineDot
 style.go::const::underlineDouble	const	ported	src/style.cr	Crystal: UnderlineDouble (Go private underlineDouble)
 style.go::function::NewStyle	function	ported	src/style.cr	Crystal: Style (constructor `Style.new`)
 style.go::function::ReadStyleColor	function	ported	src/style.cr	Crystal: read_style_color
-style.go::function::backgroundColorString	function	missing	-	unresolved: needs a manual mapping
-style.go::function::foregroundColorString	function	missing	-	unresolved: needs a manual mapping
-style.go::function::underlineColorString	function	missing	-	unresolved: needs a manual mapping
+style.go::function::backgroundColorString	function	ported	src/style.cr	Crystal: Style#background_color_string
+style.go::function::foregroundColorString	function	ported	src/style.cr	Crystal: Style#foreground_color_string
+style.go::function::underlineColorString	function	ported	src/style.cr	Crystal: Style#underline_color_string
 style.go::method::Style.BackgroundColor	method	ported	src/style.cr	Crystal: Style#background_color
 style.go::method::Style.Blink	method	ported	src/style.cr	Crystal: Style#blink
 style.go::method::Style.Bold	method	ported	src/style.cr	Crystal: Style#bold
@@ -1269,14 +1269,14 @@ truncate.go::function::TruncateWc	function	ported	src/truncate.cr	Crystal: trunc
 truncate.go::function::cut	function	ported	src/truncate.cr	Crystal: cut
 truncate.go::function::truncate	function	ported	src/truncate.cr	Crystal: truncate
 truncate.go::function::truncateLeft	function	ported	src/truncate.cr	Crystal: truncate_left
-urxvt.go::function::URxvtExt	function	missing	-	unresolved: needs a manual mapping
+urxvt.go::function::URxvtExt	function	ported	src/urxvt.cr	Crystal: urxvt_ext
 util.go::function::XParseColor	function	ported	src/color.cr	Crystal: x_parse_color
 util.go::function::colorToHexString	function	ported	src/color.cr	Crystal: color_to_hex_string
-util.go::function::rgbToHex	function	missing	-	unresolved: needs a manual mapping
-util.go::function::shift	function	missing	-	unresolved: needs a manual mapping
+util.go::function::rgbToHex	function	skipped	-	upstream marks it unused; the used path is colorToHexString -> color_to_hex_string
+util.go::function::shift	function	intentional_divergence	-	generic bit-shift helper inlined in #color_to_hex_string
 util.go::interface::shiftable	interface	intentional_divergence	-	Go generic constraint; Crystal duck types or uses Comparable
 wcwidth.go::function::init	function	skipped	-	upstream entry point; no Crystal counterpart needed
-wcwidth.go::function::isZeroWidthHigh	function	missing	-	unresolved: needs a manual mapping
+wcwidth.go::function::isZeroWidthHigh	function	ported	src/wcwidth.cr	Crystal: Unicode.zero_width?
 wcwidth.go::function::wcClusterWidth	function	ported	src/wcwidth.cr	Crystal: wc_cluster_width
 wcwidth.go::function::wcRuneWidth	function	ported	src/wcwidth.cr	Crystal: wc_rune_width
 width.go::function::StringWidth	function	ported	src/width.cr	Crystal: string_width
@@ -1288,7 +1288,7 @@ winop.go::const::RequestWindowSizeWinOp	const	ported	src/winop.cr	Crystal: Reque
 winop.go::const::ResizeWindowWinOp	const	ported	src/winop.cr	Crystal: ResizeWindowWinOp
 winop.go::function::WindowOp	function	ported	src/winop.cr	Crystal: window_op
 winop.go::function::XTWINOPS	function	ported	src/winop.cr	Crystal: xtwinops
-wrap.go::const::nbsp	const	missing	-	unresolved: needs a manual mapping
+wrap.go::const::nbsp	const	ported	src/wrap.cr	Crystal: NBSP
 wrap.go::function::Hardwrap	function	ported	src/wrap.cr	Crystal: hardwrap
 wrap.go::function::HardwrapWc	function	ported	src/wrap.cr	Crystal: hardwrap_wc
 wrap.go::function::Wordwrap	function	ported	src/wrap.cr	Crystal: wordwrap

@@ -17,10 +17,10 @@ back to a known-good state.
   ```
 
 - `plans/inventory/go_port_inventory.tsv` — the machine-checked ledger the
-  parity tooling validates (see `AGENTS.md`, "Parity tooling"). It is
-  bootstrapped, so its statuses do not yet mirror `docs/plan/audit.md`; treat
-  `make parity` as a drift check and `docs/plan/audit.md` as the coverage view
-  until the ledger is curated.
+  parity tooling validates (see `AGENTS.md`, "Parity tooling"). It is curated
+  (1 295 `ported`, 15 `intentional_divergence`, 4 `skipped`, 0 `missing`), and
+  each `ported` row names the Crystal symbol it points at, so `make parity`
+  doubles as a coverage check and a drift check against the pinned checkout.
 
 ## 2. Confirm the working tree
 

@@ -23,18 +23,11 @@ micro-commits.
   match the vendored Go source exactly. The machine-checked ledger was
   bootstrapped; curating it is the open work.
 - **Next up:**
-  1. Finish the parity ledger: 1 247 of 1 314 declarations are `ported` with a
-     verified ref, 3 are `skipped` (upstream entry points) and 3 are
-     `intentional_divergence` (Go generic constraints). The remaining 61 are
-     `missing` with a "needs a manual mapping" note — mostly sixel internals the
-     port restructured (`sixelBuilder`, `sixelPalette`, `cubePriorityQueue`,
-     `xorshift`, the pdqsort helpers), Go-only bits folded into locals
-     (`bitAdd`/`bitsMask`), and helpers that exist under another name (`nbsp`,
-     `isNaN`, `shift`, `rgbToHex`, `isZeroWidthHigh`, `URxvtExt`,
-     `backgroundColorString`). Close them by inspecting each against
-     `vendor/x/ansi`. Conventions live in `plans/parity_rules.yml`; the ledger
-     was derived with them plus a name check, and every `ported` row's symbol was
-     verified against its ref file.
+  1. Keep the ledger current: a new or changed declaration gets its row updated
+     in the same commit as the port (see the Definition of done in `AGENTS.md`).
+     The ledger is fully attributed — 1 295 `ported`, 15
+     `intentional_divergence`, 4 `skipped`, 0 `missing` — and every `ported`
+     row's ref names a symbol that exists in the file it points at.
   2. Re-audit `vendor/x/ansi` against upstream `main` and port any new behavior
      as one coherent feature, following the pattern of
      `plans/upstream-refresh-8aab43e.md`. A no-op while `main` remains
@@ -64,8 +57,8 @@ micro-commits.
   - Parity tooling: adopted from the installed `cross-language-crystal-parity`
     skill. `plans/inventory/` holds the curated ledger
     `go_port_inventory.tsv` (1 314 declarations: 838 consts, 279 functions,
-    138 methods, 33 types, 20 classes, 6 interfaces; 1 247 ported, 61 missing,
-    3 skipped, 3 intentional divergences) plus generated `go_source_parity.tsv` /
+    138 methods, 33 types, 20 classes, 6 interfaces; 1 295 ported, 15
+    intentional divergences, 4 skipped) plus generated `go_source_parity.tsv` /
     `go_test_parity.tsv` snapshots with their `.metadata.json`.
     `plans/parity_rules.yml` records the naming conventions (Go `String()` →
     `to_s`, `SetFoo` → `foo=` / `set_foo`, digit splitting, and the 54 upstream
@@ -147,10 +140,9 @@ micro-commits.
   - The checkout volume can create AppleDouble `._*` sidecars; run
     `make sidecars` or `make clean` if git or spec discovery misbehaves.
   - The ledger and `docs/plan/audit.md` describe the same coverage from two
-    directions: the TSV is machine-checked but uncurated, the markdown is
-    hand-verified but not validated by tooling. Until the ledger is curated, a
-    `make parity` pass means "no drift against the pinned checkout", not "every
-    declaration is ported".
+    directions: the TSV is machine-checked, the markdown is annotated by area.
+    Both are curated, and a row's `notes` field records the Crystal symbol so a
+    claim can be checked without re-running the matching.
 - **Last feature commit:** `port: bound DecodeSequence parameters` on top of
   `chore: move the upstream checkout to vendor/x`; it follows the linear-time
   segmentation port and the parity-tooling adoption.
@@ -218,11 +210,12 @@ micro-commits.
 - [x] Move the upstream checkout to the repository-standard `vendor/x`
       submodule path and make every doc, the Makefile, and the specs point at
       `vendor/x/ansi`
-- [x] Curate `plans/inventory/go_port_inventory.tsv`: 1 247 of 1 314 declarations
-      are `ported` with a ref verified against the source, 3 are `skipped`, 3 are
-      `intentional_divergence`, and the naming conventions live in
-      `plans/parity_rules.yml`. The remaining 61 rows are the first "Next up"
-      item.
+- [x] Curate `plans/inventory/go_port_inventory.tsv`: all 1 314 declarations are
+      attributed — 1 295 `ported` with a ref whose symbol exists in that file, 15
+      `intentional_divergence`, 4 `skipped`, 0 `missing` — with the naming
+      conventions in `plans/parity_rules.yml`. The last 61 (sixel internals,
+      enum members, renamed privates, folded helpers) were resolved by hand
+      against `vendor/x/ansi`.
 - [ ] **Later:** extract the grapheme splitter (`src/gcb.cr` +
       `src/grapheme.cr`, ~2 450 lines, no ANSI dependencies) into its own shard.
       Do it when a second consumer wants segmentation without ANSI, or when the
