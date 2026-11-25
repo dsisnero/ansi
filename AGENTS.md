@@ -35,10 +35,10 @@ them into this repo (the `Makefile` does this):
 - Source: `vendor/x/ansi` (Go), language `go`, parser mode `tree-sitter`,
   which must resolve to a manifest-verified `chiasmus` toolchain. Never maintain
   this ledger with the regex fallback.
-- Curated ledger: `plans/inventory/go_port_inventory.tsv`. Generated reference
-  snapshots: `go_source_parity.tsv` and `go_test_parity.tsv`, each with a
-  `.metadata.json`. `plans/generated/` holds disposable reconciliation output and
-  is gitignored.
+- Curated ledger: `plans/inventory/go_port_inventory.tsv`, with the naming
+  conventions in `plans/parity_rules.yml`. Generated reference snapshots:
+  `go_source_parity.tsv` and `go_test_parity.tsv`, each with a `.metadata.json`.
+  `plans/generated/` holds disposable reconciliation output and is gitignored.
 
 ```bash
 make parity             # read-only: validate the ledger and both manifests
@@ -47,9 +47,11 @@ make parity-reconcile   # entity maps/surfaces/divergences under plans/generated
 ```
 
 Rules: `parity-refresh` only re-derives the generated snapshots; the port
-inventory is curated by hand and is never regenerated. `docs/plan/audit.md`
-stays the annotated, hand-written view of the same coverage, so a change to
-either file updates the other in the same commit.
+inventory is curated by hand and is never regenerated. A `ported` row needs a
+ref whose file contains the symbol and a note naming it; unresolved rows stay
+`missing` with a "needs a manual mapping" note rather than a guess.
+`docs/plan/audit.md` stays the annotated, hand-written view of the same
+coverage, so a change to either file updates the other in the same commit.
 
 ## Docs
 

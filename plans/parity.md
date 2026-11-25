@@ -23,15 +23,18 @@ micro-commits.
   match the vendored Go source exactly. The machine-checked ledger was
   bootstrapped; curating it is the open work.
 - **Next up:**
-  1. Curate `plans/inventory/go_port_inventory.tsv`. Reconciliation with no
-     rules maps 618 source entities (317 matched, 81 ambiguous, 220 unmapped),
-     and coarse name normalization finds 344 Crystal counterparts out of 1 314,
-     so the gap is mostly rename rules (Go `String()` → `to_s`,
-     `SetFoo` → `foo=` / `set_foo`, ALL-CAPS cursor and mode helpers) and
-     upstream test helpers that the source scope pulls in. Add
-     `plans/parity_rules.yml`, exclude test helpers from the inventory scope, and
-     move the `docs/plan/audit.md` rows into the ledger one area at a time,
-     starting with `width.go` / `wcwidth.go` / `parser_decode.go`.
+  1. Finish the parity ledger: 1 247 of 1 314 declarations are `ported` with a
+     verified ref, 3 are `skipped` (upstream entry points) and 3 are
+     `intentional_divergence` (Go generic constraints). The remaining 61 are
+     `missing` with a "needs a manual mapping" note — mostly sixel internals the
+     port restructured (`sixelBuilder`, `sixelPalette`, `cubePriorityQueue`,
+     `xorshift`, the pdqsort helpers), Go-only bits folded into locals
+     (`bitAdd`/`bitsMask`), and helpers that exist under another name (`nbsp`,
+     `isNaN`, `shift`, `rgbToHex`, `isZeroWidthHigh`, `URxvtExt`,
+     `backgroundColorString`). Close them by inspecting each against
+     `vendor/x/ansi`. Conventions live in `plans/parity_rules.yml`; the ledger
+     was derived with them plus a name check, and every `ported` row's symbol was
+     verified against its ref file.
   2. Re-audit `vendor/x/ansi` against upstream `main` and port any new behavior
      as one coherent feature, following the pattern of
      `plans/upstream-refresh-8aab43e.md`. A no-op while `main` remains
@@ -61,14 +64,16 @@ micro-commits.
   - Parity tooling: adopted from the installed `cross-language-crystal-parity`
     skill. `plans/inventory/` holds the curated ledger
     `go_port_inventory.tsv` (1 314 declarations: 838 consts, 279 functions,
-    138 methods, 33 types, 20 classes, 6 interfaces) plus generated
-    `go_source_parity.tsv` / `go_test_parity.tsv` snapshots with their
-    `.metadata.json`. `make parity` re-validates all three against
+    138 methods, 33 types, 20 classes, 6 interfaces; 1 247 ported, 61 missing,
+    3 skipped, 3 intentional divergences) plus generated `go_source_parity.tsv` /
+    `go_test_parity.tsv` snapshots with their `.metadata.json`.
+    `plans/parity_rules.yml` records the naming conventions (Go `String()` →
+    `to_s`, `SetFoo` → `foo=` / `set_foo`, digit splitting, and the 54 upstream
+    `is an alias for` comments). `make parity` re-validates all three against
     `vendor/x/ansi` with the tree-sitter backend; `make parity-refresh` is for
     an upstream bump only; `make parity-reconcile` writes the disposable bundle
-    under `plans/generated/` (gitignored). The ledger is bootstrapped, not
-    curated: its rows are all `missing`, so it is a to-do list, not a coverage
-    claim.
+    under `plans/generated/` (gitignored) and is a cross-check, not the ledger's
+    source.
 - **Scoping notes / gotchas:**
   - The vendored submodule is pinned at `8aab43e` (2026-11-22, tag
     `ansi/v0.11.10`) and lives at `vendor/x` (the `charmbracelet/x` monorepo;

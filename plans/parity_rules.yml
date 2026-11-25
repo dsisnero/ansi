@@ -1,0 +1,89 @@
+# Reconciliation rules for `charmbracelet/x/ansi` (Go) -> this Crystal port.
+#
+# They encode the naming conventions the port follows so `make parity-reconcile`
+# attributes Go declarations to their Crystal counterparts: `String()` is `to_s`,
+# digits split (`Convert256` -> `convert_256`), and upstream's own `// X is an
+# alias for [Y].` comments (read from the vendored source at the pin) collapse to
+# the expanded Crystal name. The reconciler is a cross-check: the curated ledger
+# (plans/inventory/go_port_inventory.tsv) was derived directly from the source
+# with these conventions plus a name check, and every `ported` row's ref was
+# verified against the file it points at. See plans/parity.md.
+version: 1
+source_language: go
+target_language: crystal
+match_owner: false
+
+source:
+  strip_namespace: []
+  strip_prefix: []
+
+target:
+  strip_namespace: []
+  strip_prefix: []
+
+renames:
+  - { source: String, target: to_s }
+  - { source: Convert16, target: convert_16 }
+  - { source: Convert256, target: convert_256 }
+  - { source: ansiToRGB, target: ansi_to_rgb }
+  - { source: hexToRGB, target: hex_to_rgb }
+  - { source: to6Cube, target: to_6_cube }
+  - { source: NewParser, target: Parser }
+  - { source: NewTransitionTable, target: TransitionTable }
+  - { source: CBT, target: cursor_backward_tab }
+  - { source: CHA, target: cursor_horizontal_absolute }
+  - { source: CHT, target: cursor_horizontal_forward_tab }
+  - { source: CNL, target: cursor_next_line }
+  - { source: CPL, target: cursor_previous_line }
+  - { source: CPR, target: cursor_position_report }
+  - { source: CUB, target: cursor_backward }
+  - { source: CUD, target: cursor_down }
+  - { source: CUF, target: cursor_forward }
+  - { source: CUP, target: cursor_position }
+  - { source: CUU, target: cursor_up }
+  - { source: DA1, target: primary_device_attributes }
+  - { source: DA2, target: secondary_device_attributes }
+  - { source: DA3, target: tertiary_device_attributes }
+  - { source: DCH, target: delete_character }
+  - { source: DECCIR, target: cursor_information_report }
+  - { source: DECRPM, target: report_mode }
+  - { source: DECRQM, target: request_mode }
+  - { source: DECRQPSR, target: request_presentation_state_report }
+  - { source: DECRST, target: reset_mode }
+  - { source: DECSCUSR, target: set_cursor_style }
+  - { source: DECSET, target: set_mode }
+  - { source: DECSLRM, target: set_left_right_margins }
+  - { source: DECSTBM, target: set_top_bottom_margins }
+  - { source: DECTABSR, target: tab_stop_report }
+  - { source: DECXCPR, target: extended_cursor_position_report }
+  - { source: DL, target: delete_line }
+  - { source: DSR, target: device_status_report }
+  - { source: ECH, target: erase_character }
+  - { source: ED, target: erase_display }
+  - { source: EL, target: erase_line }
+  - { source: HPA, target: horizontal_position_absolute }
+  - { source: HPR, target: horizontal_position_relative }
+  - { source: HVP, target: horizontal_vertical_position }
+  - { source: ICH, target: insert_character }
+  - { source: IL, target: insert_line }
+  - { source: PanDown, target: scroll_up }
+  - { source: PanUp, target: scroll_down }
+  - { source: REP, target: repeat_previous_character }
+  - { source: RM, target: reset_mode }
+  - { source: RequestTermcap, target: xtgettcap }
+  - { source: RequestTerminfo, target: xtgettcap }
+  - { source: SCS, target: select_character_set }
+  - { source: SD, target: scroll_down }
+  - { source: SGR, target: select_graphic_rendition }
+  - { source: SM, target: set_mode }
+  - { source: SU, target: scroll_up }
+  - { source: TBC, target: tab_clear }
+  - { source: This, target: key_modifier_options }
+  - { source: VPA, target: vertical_position_absolute }
+  - { source: VPR, target: vertical_position_relative }
+  - { source: XTMODKEYS, target: key_modifier_options }
+  - { source: XTQMODKEYS, target: query_key_modifier_options }
+  - { source: XTWINOPS, target: window_op }
+
+consolidate: []
+owner_aliases: []
