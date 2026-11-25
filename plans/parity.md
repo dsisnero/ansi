@@ -218,10 +218,35 @@ micro-commits.
 - [x] Move the upstream checkout to the repository-standard `vendor/x`
       submodule path and make every doc, the Makefile, and the specs point at
       `vendor/x/ansi`
-- [ ] Curate `plans/inventory/go_port_inventory.tsv` from `docs/plan/audit.md`
-      (rename rules for `String()` → `to_s`, `SetFoo` → `foo=` / `set_foo`,
-      ALL-CAPS helpers; exclude upstream test helpers from the source scope) so
-      the ledger carries real statuses instead of the bootstrap `missing`
+- [x] Curate `plans/inventory/go_port_inventory.tsv`: 1 247 of 1 314 declarations
+      are `ported` with a ref verified against the source, 3 are `skipped`, 3 are
+      `intentional_divergence`, and the naming conventions live in
+      `plans/parity_rules.yml`. The remaining 61 rows are the first "Next up"
+      item.
+- [ ] **Later:** extract the grapheme splitter (`src/gcb.cr` +
+      `src/grapheme.cr`, ~2 450 lines, no ANSI dependencies) into its own shard.
+      Do it when a second consumer wants segmentation without ANSI, or when the
+      richer API is needed — not before: today `ansi` is the only consumer and
+      `ultraviolet` reaches it through `ansi`, so a split would add a dependency
+      edge and a second table-update stream for no gain. Extraction shape:
+      - move `src/gcb.cr`, `src/grapheme.cr`, and their specs; name the module
+        `Graphemes`/`UAX29` rather than `Ansi::Grapheme`;
+      - expose `cluster_end(bytes, offset, incb:)` and add the convenience layer
+        `textseg` offers today — eager `clusters`, `each_cluster`, and per-cluster
+        `codepoints`/`positions`/`str` (the extraction is not a drop-in
+        replacement without it);
+      - check in the table generator (uax29 v2.x trie or UCD files) and pin the
+        Unicode version in the shard's docs;
+      - keep `Ansi.each_grapheme_cluster` (including the `incb:` flag) as a thin
+        delegating wrapper so consumers do not change, and keep the ANSI parser
+        walk and the displaywidth measurement in `ansi`.
+      Rationale on record: `textseg` 0.1.3 is Unicode 12.0.0, has no GB9c, and
+      rebuilds a char→byte index per call, so it is quadratic (20 KB of katakana:
+      183 ms vs 2 ms here, 99 KB: ~5 s vs ~16 ms) and its single-slot state
+      machine mis-segments Prepend runs, Hangul and RI parity after a Prepend or
+      control. The vendored splitter matches Go's `uax29` on 14 272 differential
+      cases and reproduces `textseg`'s GB9c-free split with `incb: false`, so it
+      strictly covers what the shard does behaviourally.
 
 ## Intentional divergences
 
