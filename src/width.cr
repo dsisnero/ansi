@@ -144,9 +144,10 @@ module Ansi
     following >= bytes.size || bytes[following] < 0x80
   end
 
-  # State for [next_cluster]: the buffer being walked and how to measure a
-  # cluster. Clusters are found on demand by [Grapheme.cluster_end], which reads
-  # one code point at a time, so the walk is linear and needs no lookahead state.
+  # State for [next_cluster]: the buffer being walked, how to measure a cluster,
+  # and whether to apply GB9c. Clusters are found on demand by
+  # [Grapheme.cluster_end], which reads one code point at a time, so the walk is
+  # linear and each call is independent of the ones before it.
   class ClusterWalk
     getter bytes : Bytes
     getter method : Method
@@ -171,11 +172,13 @@ module Ansi
 
   # Reads the grapheme cluster that starts at *offset*.
   #
-  # The walkers used to hand this method `bytes[i, bytes.size - i]`, which
-  # copies the whole remaining string for every cluster: walking a 99 KB
-  # katakana string took ~4.8 s in `each_grapheme_cluster`, ~1.6 s in
-  # `cut`/`truncate` and ~0.8 s in `string_width`. Reading from the offset
-  # copies only the cluster, so every walk is O(n).
+  # Reading from the offset copies only the cluster, so every walk is linear. The
+  # first port sliced the remaining string per cluster instead, which made a
+  # 99 KB katakana string take ~4.8 s in `each_grapheme_cluster`; it now measures
+  # in ~17 ms.
+  #
+  # `incb: false` returns the GB9c-free boundary that terminal input decoders
+  # use; see [Grapheme.cluster_end].
   private def self.first_grapheme_cluster(bytes : Bytes, offset : Int32, m : Method, incb : Bool = true) : {Bytes, Int32}
     return {Bytes.empty, 0} if offset < 0 || offset >= bytes.size
 

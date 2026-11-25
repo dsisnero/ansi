@@ -9,6 +9,12 @@ module Ansi
   # pictographic sequences, regional indicator parity). This splitter keeps the
   # four pieces of state uax29 keeps and applies the same rules in the same order,
   # so a boundary is the one Go finds.
+  #
+  # GB9c (Indic conjuncts) is on by default, matching `StringWidth` and the
+  # pinned Go source. Pass `incb: false` for the older boundaries
+  # `github.com/rivo/uniseg` produces, which is what Go's terminal input decoders
+  # see: there a virama ends its segment. The property tables in `src/gcb.cr` come
+  # from the same uax29 release, so both modes are table-driven.
   module Grapheme
     # GB9c `Consonant [Extend Linker]* Linker [Extend Linker]* x Consonant`.
     private enum IncbState

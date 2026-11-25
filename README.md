@@ -3,7 +3,9 @@
 `ansi` is a Crystal library for generating and parsing ANSI terminal escape
 sequences. It is a Crystal port of `vendor/x/ansi` (Go) and includes helpers for
 colors, styles, cursor control, modes, mouse/keyboard protocols, images
-(Kitty, iTerm2, Sixel), and sequence parsing/decoding utilities.
+(Kitty, iTerm2, Sixel), grapheme cluster segmentation, and sequence
+parsing/decoding utilities. Width measurement and segmentation follow the same
+Unicode 17 tables the Go source uses.
 
 ## Installation
 
@@ -39,7 +41,16 @@ print Ansi.set_system_clipboard("hello")
 # Kitty graphics
 payload = "...".to_slice
 print Ansi.kitty_graphics(payload)
+
+# Width and grapheme clusters (ANSI escapes are skipped, clusters are measured)
+Ansi.string_width("\e[31mこんにちは\e[0m")  # => 10
+Ansi.string_width_wc("स्ते")                # => 2 (per code point)
+Ansi.each_grapheme_cluster("a👋b") { |cluster, width| puts "#{cluster} #{width}" }
+
+# Terminal input decoders do not apply GB9c, so a virama ends a segment:
+Ansi.each_grapheme_cluster("स्ते", incb: false) { |cluster, _w| ... } # "स्", "ते"
 ```
+
 
 ## Development
 
@@ -50,6 +61,7 @@ make build
 make format
 make lint
 make test
+make parity   # drift checks against the pinned vendor/x/ansi checkout
 ```
 
 See [docs/development.md](docs/development.md) for setup, the vendored upstream
@@ -65,6 +77,7 @@ checkout, and the porting loop.
 - [PR Workflow](docs/pr-workflow.md)
 - [Parity plan](plans/parity.md)
 - [Port audit](docs/plan/audit.md)
+- [Changelog](CHANGELOG.md)
 
 ## Contributing
 

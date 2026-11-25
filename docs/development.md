@@ -37,12 +37,20 @@ newer than the pin, fetch its tag and read the file from that revision without
 changing the submodule checkout:
 
 ```bash
-git -C vendor/x fetch --depth=1 origin refs/tags/ansi/v0.11.9
+git -C vendor/x fetch --depth=1 origin refs/tags/ansi/v0.11.10
 git -C vendor/x show FETCH_HEAD:ansi/programstatus.go
 git -C vendor/x show FETCH_HEAD:ansi/programstatus_test.go
 ```
 
 Record the tag or commit used for the feature in the plan and commit message.
+To check whether the pin is stale, ask upstream what changed under `ansi/`:
+
+```bash
+git -C vendor/x log --oneline 8aab43e..origin/main -- ansi
+```
+
+A refresh that ports new upstream behavior follows the shape of
+[../plans/upstream-refresh-8aab43e.md](../plans/upstream-refresh-8aab43e.md).
 
 ## Porting loop
 
@@ -56,11 +64,19 @@ Record the tag or commit used for the feature in the plan and commit message.
    make format
    make lint
    make test
+   make parity
    ```
 
-5. Update `docs/plan/audit.md` and the **Where we are** block in
-   `plans/parity.md`.
-6. Commit one feature atomically using the `port: ...` convention from
+   `make parity` validates the ledger and the generated manifests against the
+   pinned upstream checkout; `make parity-refresh` regenerates the source/test
+   snapshots (upstream bump only), and `make parity-reconcile` writes the
+   disposable maps under `plans/generated/`.
+
+5. Update the coverage rows in `plans/inventory/go_port_inventory.tsv` (status,
+   ref, and a note naming the Crystal symbol), `docs/plan/audit.md`, and the
+   **Where we are** block in `plans/parity.md`.
+6. Add an `[Unreleased]` entry to `CHANGELOG.md` for anything user visible.
+7. Commit one feature atomically using the `port: ...` convention from
    `AGENTS.md`.
 
 CI runs the same gates on the latest Crystal release, with cached

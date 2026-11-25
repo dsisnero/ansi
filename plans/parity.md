@@ -143,12 +143,12 @@ micro-commits.
     directions: the TSV is machine-checked, the markdown is annotated by area.
     Both are curated, and a row's `notes` field records the Crystal symbol so a
     claim can be checked without re-running the matching.
-- **Last feature commit:** `port: bound DecodeSequence parameters` on top of
-  `chore: move the upstream checkout to vendor/x`; it follows the linear-time
-  segmentation port and the parity-tooling adoption.
-- **Gates:** `make build`, `make format`, `make lint`, `make test` (528
-  examples), and `make parity` (1 314 declarations, 1 314 API items, 275 tests)
-  pass.
+- **Last feature commit:** `chore: finish the parity ledger`; the feature work
+  behind it is the vendored UAX #29 splitter, its page-indexed property table,
+  the `incb:` decoder mode, and the curated ledger.
+- **Gates:** `make build`, `make format`, `make lint` (98 files), `make test`
+  (546 examples), and `make parity` (1 314 declarations, 1 314 API items, 275
+  tests) pass.
 
 ## Phase 1 — Core ANSI and parser
 

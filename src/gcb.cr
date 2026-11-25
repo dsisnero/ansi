@@ -6,8 +6,14 @@ module Ansi
   # exact tables the vendored Go source segments with.
   #
   # `RANGES` is sorted and stores one entry per run of code points sharing a
-  # property set, so a lookup is a binary search. Code points outside every range
-  # have no properties (UAX #29 "Any").
+  # property set; `PAGE_RANGES` narrows the search to the 256-code-point page the
+  # code point falls in. Code points outside every range have no properties
+  # (UAX #29 "Any").
+  #
+  # Regenerate these tables from the uax29 release the vendored Go source
+  # depends on (`graphemes/trie.go`): decode the trie for every code point, then
+  # collapse runs with equal property bits. plans/parity.md records the release
+  # and the follow-up that would check the generator in.
   module GCB
     CR                   = 0x00001_u32
     Control              = 0x00002_u32

@@ -198,6 +198,10 @@ module Ansi
     buf.to_s
   end
 
+  # Ports Go's `ByteToGraphemeRange`: maps the byte range `byte_start...byte_stop`
+  # of *str* to the grapheme range it covers, counting each cluster as at least
+  # one column. Every boundary comes from [Grapheme.cluster_end], so the result
+  # agrees with [string_width] on conjuncts and other joined clusters.
   def self.byte_to_grapheme_range(str : String, byte_start : Int32, byte_stop : Int32) : {Int32, Int32}
     bytes = str.to_slice
     byte_pos = 0

@@ -63,6 +63,7 @@ coverage, so a change to either file updates the other in the same commit.
 - [PR Workflow](docs/pr-workflow.md)
 - [Parity plan](plans/parity.md)
 - [Port audit](docs/plan/audit.md)
+- [Changelog](CHANGELOG.md)
 
 ## Principles
 
@@ -71,8 +72,10 @@ coverage, so a change to either file updates the other in the same commit.
 2. Port behavior, not style. Use Crystal idioms only where behavior is
    unchanged.
 3. Port upstream tests early and never weaken assertions.
-4. Track parity in [plans/parity.md](plans/parity.md) and per-symbol coverage in
-   [docs/plan/audit.md](docs/plan/audit.md).
+4. Track parity in [plans/parity.md](plans/parity.md), per-symbol coverage in
+   [docs/plan/audit.md](docs/plan/audit.md) and
+   `plans/inventory/go_port_inventory.tsv`, and user-visible changes in
+   [CHANGELOG.md](CHANGELOG.md).
 5. Commit one completed feature at a time.
 
 ## Session continuity (read this first)
@@ -109,11 +112,15 @@ must be committed as **one** atomic commit before starting the next feature:
 
 1. the API surface is implemented;
 2. upstream tests (or equivalent characterization specs) exist and pass;
-3. gates pass: `make lint` and `make test`;
-4. coverage rows for the feature are updated in `docs/plan/audit.md`;
+3. gates pass: `make build`, `make format`, `make lint`, `make test`, and
+   `make parity`;
+4. coverage rows for the feature are updated in
+   `plans/inventory/go_port_inventory.tsv` (status, ref, note) and
+   `docs/plan/audit.md`;
 5. `plans/parity.md` status is updated and the **Where we are** block refreshed
    (current focus + next up);
-6. any intentional divergence is documented (in `plans/parity.md` and/or the
+6. user-visible changes have an `[Unreleased]` entry in `CHANGELOG.md`;
+7. any intentional divergence is documented (in `plans/parity.md` and/or the
    commit message).
 
 ### Commit message

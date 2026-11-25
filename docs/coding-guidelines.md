@@ -34,6 +34,14 @@
 - Do not silence `Naming/AccessorMethodName`. Use `# ameba:disable` only for
   rules such as `Metrics/CyclomaticComplexity` where the port intentionally
   mirrors upstream control flow.
+- Keep Unicode data in the vendored tables (`src/gcb.cr`, `src/displaywidth.cr`,
+  `src/wcwidth.cr`) rather than calling a shard. They come from the exact
+  releases the Go source depends on, so a table refresh is a deliberate change
+  with a differential run, not an incidental dependency bump.
+- When adding a public behavior, keep the two segmentation modes honest:
+  `incb: true` (default) matches width measurement and the Go source, while
+  `incb: false` matches `github.com/rivo/uniseg` for input decoders. Do not let
+  a computation depend silently on which one a caller picked.
 
 ## Errors and return values
 
