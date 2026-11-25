@@ -9,7 +9,7 @@ AMEBA ?= $(shell if [ -x bin/ameba ]; then echo ./bin/ameba; else echo ameba; fi
 # copied into this repo, and tree-sitter mode must resolve a verified toolchain.
 PARITY_SKILL ?= $(HOME)/.config/opencode/skills/cross-language-crystal-parity
 PARITY_LANGUAGE ?= go
-PARITY_SOURCE ?= x/ansi
+PARITY_SOURCE ?= vendor/x/ansi
 PARITY_INVENTORY := plans/inventory/$(PARITY_LANGUAGE)_port_inventory.tsv
 PARITY_SNAPSHOTS := plans/inventory/$(PARITY_LANGUAGE)_source_parity.tsv plans/inventory/$(PARITY_LANGUAGE)_test_parity.tsv
 PARITY_ENV := PORT_PARSER=tree-sitter

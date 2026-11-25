@@ -13,7 +13,8 @@ crystal spec spec/program_status_spec.cr:42
 ## Porting upstream tests
 
 - Put the Crystal spec in the file that mirrors the upstream `*_test.go` file,
-  for example `x/ansi/programstatus_test.go` → `spec/program_status_spec.cr`.
+  for example `vendor/x/ansi/programstatus_test.go` →
+  `spec/program_status_spec.cr`.
 - Port the test data exactly: same inputs, expected sequences, limits, and
   error paths. Crystal loops or `it` blocks may replace Go table tests without
   changing coverage.

@@ -1,6 +1,6 @@
 require "./spec_helper"
 
-# Ported from x/ansi/method_test.go.
+# Ported from vendor/x/ansi/method_test.go.
 describe "Ansi::Method#string_width" do
   cases = [
     {"empty string wcwidth", Ansi::Method::WcWidth, "", 0},

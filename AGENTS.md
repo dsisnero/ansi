@@ -6,7 +6,7 @@
 > Do not re-derive state from git history.
 
 Crystal port of `charmbracelet/x/ansi` (Go) from
-[charmbracelet/x](https://github.com/charmbracelet/x), vendored at `x/ansi`
+[charmbracelet/x](https://github.com/charmbracelet/x), vendored at `vendor/x/ansi`
 (commit `cb897cb`). The Go implementation is the source of truth. The port also
 tracks newer upstream files when a feature is requested, for example OSC 7501
 program status from `ansi/v0.11.9`.
@@ -20,7 +20,7 @@ make build     # crystal build --no-codegen src/ansi.cr
 make format    # crystal tool format --check src spec
 make lint      # ameba --fix src spec, then ameba src spec
 make test      # crystal spec
-make parity    # parity drift checks against the pinned x/ansi checkout
+make parity    # parity drift checks against the pinned vendor/x/ansi checkout
 make clean     # remove ./temp contents and AppleDouble sidecars
 ```
 
@@ -32,9 +32,9 @@ them into this repo (the `Makefile` does this):
 
 - Skill directory: `/Users/dominic/.config/opencode/skills/cross-language-crystal-parity`
   (override with `PARITY_SKILL=...`).
-- Source: `x/ansi` (Go), language `go`, parser mode `tree-sitter`, which must
-  resolve to a manifest-verified `chiasmus` toolchain. Never maintain this ledger
-  with the regex fallback.
+- Source: `vendor/x/ansi` (Go), language `go`, parser mode `tree-sitter`,
+  which must resolve to a manifest-verified `chiasmus` toolchain. Never maintain
+  this ledger with the regex fallback.
 - Curated ledger: `plans/inventory/go_port_inventory.tsv`. Generated reference
   snapshots: `go_source_parity.tsv` and `go_test_parity.tsv`, each with a
   `.metadata.json`. `plans/generated/` holds disposable reconciliation output and
@@ -64,8 +64,8 @@ either file updates the other in the same commit.
 
 ## Principles
 
-1. Upstream behavior under `x/ansi` is the source of truth and wins over local
-   preference.
+1. Upstream behavior under `vendor/x/ansi` is the source of truth and wins
+   over local preference.
 2. Port behavior, not style. Use Crystal idioms only where behavior is
    unchanged.
 3. Port upstream tests early and never weaken assertions.
@@ -158,8 +158,8 @@ When porting Go tests to Crystal specs:
 - Use `./temp` for temporary files created during testing or development.
 - Never commit temporary files (`temp/` and `tmp/` are ignored).
 - `make clean` removes `./temp` contents and AppleDouble sidecars.
-- Do not edit vendored upstream code under `x/`; treat it as read-only source of
-  truth.
+- Do not edit vendored upstream code under `vendor/x/`; treat it as read-only
+  source of truth.
 
 ## Environment notes
 

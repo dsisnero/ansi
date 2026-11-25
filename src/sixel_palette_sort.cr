@@ -1,6 +1,6 @@
 module Ansi
   module Sixel
-    # Port of x/ansi/sixel/palette_sort.go, a pattern-defeating quicksort with
+    # Port of vendor/x/ansi/sixel/palette_sort.go, a pattern-defeating quicksort with
     # the same xorshift-based pattern breaking used by the Go median-cut sort.
     module PaletteSort
       enum SortedHint

@@ -67,7 +67,7 @@ describe Ansi::Color do
 end
 
 # Pending tests for missing color functionality
-# These tests are based on Go's x/ansi/color_test.go
+# These tests are based on Go's vendor/x/ansi/color_test.go
 
 describe "Color conversions (from Go tests)" do
   # TestRGBAToHex

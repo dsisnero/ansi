@@ -25,11 +25,11 @@ intentionally not committed because this is a library.
 
 ## Upstream checkout
 
-The upstream Go source is the `x` submodule:
+The upstream Go source is the `vendor/x` submodule:
 
 ```bash
-git -C x log -1 --oneline
-ls x/ansi
+git -C vendor/x log -1 --oneline
+ls vendor/x/ansi
 ```
 
 The pinned commit is recorded in `plans/parity.md`. To port a feature that is
@@ -37,9 +37,9 @@ newer than the pin, fetch its tag and read the file from that revision without
 changing the submodule checkout:
 
 ```bash
-git -C x fetch --depth=1 origin refs/tags/ansi/v0.11.9
-git -C x show FETCH_HEAD:ansi/programstatus.go
-git -C x show FETCH_HEAD:ansi/programstatus_test.go
+git -C vendor/x fetch --depth=1 origin refs/tags/ansi/v0.11.9
+git -C vendor/x show FETCH_HEAD:ansi/programstatus.go
+git -C vendor/x show FETCH_HEAD:ansi/programstatus_test.go
 ```
 
 Record the tag or commit used for the feature in the plan and commit message.

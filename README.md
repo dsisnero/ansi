@@ -1,7 +1,7 @@
 # ansi
 
 `ansi` is a Crystal library for generating and parsing ANSI terminal escape
-sequences. It is a Crystal port of `x/ansi` (Go) and includes helpers for
+sequences. It is a Crystal port of `vendor/x/ansi` (Go) and includes helpers for
 colors, styles, cursor control, modes, mouse/keyboard protocols, images
 (Kitty, iTerm2, Sixel), and sequence parsing/decoding utilities.
 

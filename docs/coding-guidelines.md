@@ -14,7 +14,7 @@
 
 ## Porting behavior
 
-- Upstream `x/ansi` is authoritative. Do not "improve" escape sequences,
+- Upstream `vendor/x/ansi` is authoritative. Do not "improve" escape sequences,
   validation, clamping, or ordering.
 - Port the Go test table cases before changing implementation. Specs must
   assert concrete sequences and values, not just that a method runs.

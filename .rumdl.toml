@@ -22,7 +22,6 @@ exclude = [
     ".github",
     "node_modules",
     "vendor",
-    "x",
     "lib",
     "temp",
     "build",

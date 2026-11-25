@@ -5,7 +5,7 @@ include ParserSpecSupport
 # Go decodes the bytes the state machine collected with utf8.DecodeRune, so an
 # invalid sequence dispatches a single U+FFFD and the bytes it collected are
 # consumed with it. These cases were verified against the vendored parser in
-# x/ansi.
+# vendor/x/ansi.
 describe "Ansi::Parser invalid UTF-8 handling" do
   cases = [
     {

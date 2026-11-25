@@ -20,7 +20,9 @@ micro-commits.
   short-circuits without segmentation like `uax29`'s own hot path.
   `Ansi.string_width` on 8 000 ASCII characters went from ~50 s to ~1 ms, and a
   3.2 KB mixed string from 6.3 s to 45 ms. The machine-checked ledger was then
-  bootstrapped; curating it is the open work.
+  bootstrapped; curating it is the open work. The upstream checkout also moved to
+  the repository-standard `vendor/x` submodule path (`vendor/x/ansi`), which is
+  what every document and the parity tooling now reference.
 - **Next up:**
   1. Curate `plans/inventory/go_port_inventory.tsv`. Reconciliation with no
      rules maps 618 source entities (317 matched, 81 ambiguous, 220 unmapped),
@@ -31,9 +33,9 @@ micro-commits.
      `plans/parity_rules.yml`, exclude test helpers from the inventory scope, and
      move the `docs/plan/audit.md` rows into the ledger one area at a time,
      starting with `width.go` / `wcwidth.go` / `parser_decode.go`.
-  2. Re-audit `x/ansi` against upstream `main` and port any new behavior as one
-     coherent feature. This is expected to be a no-op while `main` remains
-     `cb897cb`.
+  2. Re-audit `vendor/x/ansi` against upstream `main` and port any new behavior
+     as one coherent feature. This is expected to be a no-op while `main`
+     remains `cb897cb`.
   3. Close the remaining segmentation divergence: the `textseg` shard breaks
      `GB9b` between two `Prepend` code points (`U+0600 U+0600`), which `uax29`
      keeps in one cluster. Found by the lookahead differential below; 2 of
@@ -65,14 +67,23 @@ micro-commits.
     `go_port_inventory.tsv` (1 314 declarations: 838 consts, 279 functions,
     138 methods, 33 types, 20 classes, 6 interfaces) plus generated
     `go_source_parity.tsv` / `go_test_parity.tsv` snapshots with their
-    `.metadata.json`. `make parity` re-validates all three against `x/ansi` with
-    the tree-sitter backend; `make parity-refresh` is for an upstream bump only;
-    `make parity-reconcile` writes the disposable bundle under
-    `plans/generated/` (gitignored). The ledger is bootstrapped, not curated: its
-    rows are all `missing`, so it is a to-do list, not a coverage claim.
+    `.metadata.json`. `make parity` re-validates all three against
+    `vendor/x/ansi` with the tree-sitter backend; `make parity-refresh` is for
+    an upstream bump only; `make parity-reconcile` writes the disposable bundle
+    under `plans/generated/` (gitignored). The ledger is bootstrapped, not
+    curated: its rows are all `missing`, so it is a to-do list, not a coverage
+    claim.
 - **Scoping notes / gotchas:**
-  - The vendored submodule is pinned at `cb897cb` (2026-10-18). The refresh
-    checklist and exact diff are in `plans/upstream-refresh-cb897cb.md`.
+  - The vendored submodule is pinned at `cb897cb` (2026-10-18) and lives at
+    `vendor/x` (the `charmbracelet/x` monorepo; only `ansi/` is ported). The
+    refresh checklist and exact diff are in
+    `plans/upstream-refresh-cb897cb.md`.
+  - `spec/array_validation_spec.cr` anchors the Go source path to `__DIR__`. It
+    used to say `../x/ansi/color.go`, which resolves outside the repo whenever
+    the suite runs from the root, so both constant-array validations silently
+    skipped; the hex parser then also rejected Go's `0x`-prefixed literals. Both
+    are fixed, and the spec now compares 256 `ANSI_HEX` and 256 `ANSI256_TO_16`
+    entries against `color.go` on every `make test`.
   - The latest `ansi` tag is `ansi/v0.11.9`; `main` contains later fixes
     (Wcwidth per codepoint, Kitty `Quiet`) that are not in that tag.
   - Width classification uses vendored displaywidth v0.11.0 tables for
@@ -111,9 +122,9 @@ micro-commits.
     hand-verified but not validated by tooling. Until the ledger is curated, a
     `make parity` pass means "no drift against the pinned checkout", not "every
     declaration is ported".
-- **Last feature commit:** `port: segment the first grapheme cluster from a
-  lookahead window`, which makes the per-cluster path linear and adds the ASCII
-  hot path.
+- **Last feature commit:** `chore: move the upstream checkout to vendor/x` (follows
+  `chore: adopt the parity inventory tooling` and the linear-time segmentation
+  port).
 - **Gates:** `make build`, `make format`, `make lint`, `make test` (523
   examples), and `make parity` (1 314 declarations, 269 tests) pass.
 
@@ -166,6 +177,9 @@ micro-commits.
 - [x] Adopt the `cross-language-crystal-parity` tooling: inventory manifests,
       `make parity` / `parity-refresh` / `parity-reconcile`, and the
       AGENTS.md pointer
+- [x] Move the upstream checkout to the repository-standard `vendor/x`
+      submodule path and make every doc, the Makefile, and the specs point at
+      `vendor/x/ansi`
 - [ ] Curate `plans/inventory/go_port_inventory.tsv` from `docs/plan/audit.md`
       (rename rules for `String()` → `to_s`, `SetFoo` → `foo=` / `set_foo`,
       ALL-CAPS helpers; exclude upstream test helpers from the source scope) so

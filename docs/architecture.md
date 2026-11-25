@@ -18,8 +18,8 @@ ANSI escape sequences and parses terminal input.
 
 ## Upstream reference
 
-The upstream source is vendored as the `x` git submodule and lives at
-`x/ansi`. Treat it as read-only. The pinned commit is recorded in
+The upstream source is vendored as the `vendor/x` git submodule and lives at
+`vendor/x/ansi`. Treat it as read-only. The pinned commit is recorded in
 `plans/parity.md`; newer tagged files are fetched only when porting a specific
 feature.
 

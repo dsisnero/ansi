@@ -1,7 +1,10 @@
 require "./spec_helper"
 
-# Path to Go source file
-GO_COLOR_FILE = "../x/ansi/color.go"
+# Path to the vendored Go source of truth. Anchored to this file so the spec
+# resolves it regardless of the directory `crystal spec` runs from: the earlier
+# `../x/ansi/color.go` pointed outside the repo whenever the suite ran from the
+# root, so both validations below silently skipped.
+GO_COLOR_FILE = File.expand_path("../vendor/x/ansi/color.go", __DIR__)
 
 module ArrayValidation
   # Helper to parse Go's color.RGBA array
@@ -18,7 +21,12 @@ module ArrayValidation
       line = lines[i].strip
       break if line == "}" # end of array
       # Match pattern: {R: 0x00, G: 0x00, B: 0x00, A: 0xff},
-      if line =~ /\{R:\s*(0x[0-9a-fA-F]+),\s*G:\s*(0x[0-9a-fA-F]+),\s*B:\s*(0x[0-9a-fA-F]+),\s*A:\s*(0x[0-9a-fA-F]+)\}/
+      #
+      # `to_u8(16)` rejects the `0x` prefix, so strip it before parsing; the
+      # earlier version passed the literal straight through and raised, which
+      # the `unless go_entries` skip never reached because the parse is what
+      # raised.
+      if line =~ /\{R:\s*0x([0-9a-fA-F]+),\s*G:\s*0x([0-9a-fA-F]+),\s*B:\s*0x([0-9a-fA-F]+),\s*A:\s*0x([0-9a-fA-F]+)\}/
         r = $1.to_u8(16)
         g = $2.to_u8(16)
         b = $3.to_u8(16)

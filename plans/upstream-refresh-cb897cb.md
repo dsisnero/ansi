@@ -10,7 +10,7 @@ this plan covers porting the `ansi/` changes to Crystal.
 - **Previous vendor pin:** `eeb2896` (`feat(exp/slice): Map function`).
 - **Current vendor pin:** `cb897cb` (`chore(powernap): update lsp configs`).
 - **Latest `ansi` tag:** `ansi/v0.11.9`.
-- **Upstream range reviewed:** `git -C x diff eeb2896 cb897cb -- ansi`.
+- **Upstream range reviewed:** `git -C vendor/x diff eeb2896 cb897cb -- ansi`.
 - **Already ported:** OSC 7501 Program Status (`09f7503`) landed in this port
   as commit `e5a6c9b`; no work expected beyond re-running its spec.
 - **Not in scope:** upstream commits outside `ansi/` (powernap, editor, etc.).
@@ -68,7 +68,7 @@ and the one most likely to affect existing output.
 
 ### Implementation
 
-- [x] Add `src/wcwidth.cr` porting `x/ansi/wcwidth.go`:
+- [x] Add `src/wcwidth.cr` porting `vendor/x/ansi/wcwidth.go`:
   - zero-width categories `Mn`, `Me`, `Cf` (combining marks, enclosing marks,
     ZWJ, variation selectors, tag characters) using Crystal's Unicode tables;
   - `wc_rune_width(r)`: C0/C1 and DEL are 0, printable ASCII is 1, zero-width
@@ -176,8 +176,8 @@ path uses a native Go-compatible implementation instead of the Crystal
 ## Verification and signoff
 
 ```bash
-git -C x diff eeb2896 cb897cb -- ansi
-cd x/ansi && go test ./...
+git -C vendor/x diff eeb2896 cb897cb -- ansi
+cd vendor/x/ansi && go test ./...
 make format
 make lint
 make test
@@ -202,6 +202,6 @@ make test
 - Grapheme width tests must keep their current expectations; only WcWidth
   changes.
 - The submodule checkout is detached at the recorded pin. Do not commit files
-  under `x/`; only the parent submodule pointer changes.
+  under `vendor/x/`; only the parent submodule pointer changes.
 - AppleDouble sidecars can reappear after git operations; run
   `make sidecars` before gates.

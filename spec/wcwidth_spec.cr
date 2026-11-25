@@ -1,6 +1,6 @@
 require "./spec_helper"
 
-# Ported from x/ansi/wcwidth_test.go. The upstream test that sweeps every
+# Ported from vendor/x/ansi/wcwidth_test.go. The upstream test that sweeps every
 # codepoint above the BMP is represented by a sample here; the table-driven
 # cases below cover each zero-width category and the fallback widths.
 describe "Ansi wcwidth helpers" do

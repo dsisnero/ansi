@@ -47,9 +47,9 @@ All must pass before changing anything.
 Take the first unchecked item in the **Next up** list (or the next `[ ]` item in
 the current phase). For each feature:
 
-1. Read the upstream source under `x/ansi` and the nearest upstream tests. If
-   the feature landed after the pinned commit, fetch the relevant upstream tag
-   as described in `docs/development.md`.
+1. Read the upstream source under `vendor/x/ansi` and the nearest upstream
+   tests. If the feature landed after the pinned commit, fetch the relevant
+   upstream tag as described in `docs/development.md`.
 2. Port the tests first (red → green); never weaken assertions.
 3. Satisfy the **Definition of done** in `AGENTS.md` (API, tests, gates, audit
    rows, `plans/parity.md` status + **Where we are** refresh, divergences).
